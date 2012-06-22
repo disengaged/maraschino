@@ -50,7 +50,7 @@ AVAILABLE_MODULES = [
     {
         'name': 'library',
         'label': 'Media Library',
-        'description': 'Allows you to browse your media library and select items to play in XBMC.',
+        'description': 'Allows you to browse your media library and select items to play in your media center.',
         'static': True,
         'poll': 0,
         'delay': 0,
