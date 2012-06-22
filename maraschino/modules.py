@@ -15,7 +15,7 @@ from Maraschino import app
 from maraschino.tools import *
 
 from maraschino.database import *
-from maraschino.models import Module, XbmcServer
+from maraschino.models import Module, MediaServer
 
 # name, label, description, and static are not user-editable and are taken from here
 # poll and delay are user-editable and saved in the database - the values here are the defaults
@@ -754,7 +754,7 @@ def server_settings_dialog(server_id=None):
 
     if server_id:
         try:
-            server = XbmcServer.query.get(server_id)
+            server = MediaServer.query.get(server_id)
 
         except:
             logger.log('Error retrieving server details for server ID %s' % server_id , 'WARNING')
@@ -770,7 +770,7 @@ def server_settings_dialog(server_id=None):
 
     else:
         if not server:
-            server = XbmcServer('', 1, '')
+            server = MediaServer('', 1, '')
 
         label = request.form['label']
         if not label:
@@ -796,7 +796,7 @@ def server_settings_dialog(server_id=None):
                 db_session.commit()
 
             return render_template('includes/servers.html',
-                servers = XbmcServer.query.order_by(XbmcServer.position),
+                servers = MediaServer.query.order_by(MediaServer.position),
             )
 
         except:
@@ -813,12 +813,12 @@ def delete_server(server_id=None):
     """
 
     try:
-        xbmc_server = XbmcServer.query.get(server_id)
+        xbmc_server = MediaServer.query.get(server_id)
         db_session.delete(xbmc_server)
         db_session.commit()
 
         return render_template('includes/servers.html',
-            servers = XbmcServer.query.order_by(XbmcServer.position),
+            servers = MediaServer.query.order_by(MediaServer.position),
         )
 
     except:
@@ -832,7 +832,7 @@ def switch_server(server_id=None):
     Switches XBMC servers.
     """
 
-    xbmc_server = XbmcServer.query.get(server_id)
+    xbmc_server = MediaServer.query.get(server_id)
 
     try:
         active_server = get_setting('active_server')

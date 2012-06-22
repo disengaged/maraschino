@@ -75,7 +75,7 @@ class Disk(Base):
     def __repr__(self):
         return '<Disk %r>' % (self.path)
 
-class XbmcServer(Base):
+class MediaServer(Base):
     __tablename__ = 'xbmc_servers'
     id = Column(Integer, primary_key=True)
     label = Column(String(500))
@@ -102,7 +102,7 @@ class XbmcServer(Base):
         self.mac_address = mac_address
 
     def __repr__(self):
-        return '<XbmcServer %r>' % (self.label)
+        return '<MediaServer %r>' % (self.label)
 
 def highest_position(model):
     highest_position = 0
