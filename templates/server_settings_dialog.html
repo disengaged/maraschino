@@ -3,7 +3,13 @@
   <h2>{{ 'Edit' if server else 'Add' }} server</h2>
 
   <form class="inner" method="post" action="">
-
+    <div class="formrow">
+      <label for="id_server_type">Server type</label>
+         <select id="id_server_type" name="server.type">
+                <option value="PLEX">Plex</option>
+                <option value="XBMC">XBMC</option>
+              </select>
+    </div>
     <div class="formrow">
       <label for="id_server_label">Label</label>
       <input id="id_server_label" name="label" type="text" value="{{ server.label }}">

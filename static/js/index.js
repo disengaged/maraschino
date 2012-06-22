@@ -1765,7 +1765,7 @@ $(document).ready(function() {
 
           $.post(WEBROOT + '/xhr/server_settings_dialog/' + server_id, settings, function(data) {
             if (data.status === 'error') {
-              popup_message('There was an error saving the XBMC server.');
+              popup_message('There was an error saving the Media server.');
               return;
             }
 
@@ -1789,7 +1789,7 @@ $(document).ready(function() {
   $('#server_settings_dialog .delete').live('click', function() {
     $.post(WEBROOT + '/xhr/delete_server/' + $(this).data('server_id'), {}, function(data) {
       if (data.status === 'error') {
-        popup_message('There was an error deleting the XBMC server.');
+        popup_message('There was an error deleting the media server.');
       } else {
         $('#server_settings_dialog').closePopup();
         var servers_menu = $(data);
@@ -1798,7 +1798,7 @@ $(document).ready(function() {
           $('#extra_settings #server_settings').replaceWith(servers_menu);
         }
 
-        popup_message('XBMC server has been deleted.');
+        popup_message('Media server has been deleted.');
       }
     });
   });
@@ -1811,7 +1811,7 @@ $(document).ready(function() {
 
       $.get(WEBROOT + '/xhr/switch_server/' + $(this).data('server_id'), function(data) {
         if (data.status === 'error') {
-          popup_message('There was an error switching XBMC servers.');
+          popup_message('There was an error switching Media servers.');
           return;
         }
 
