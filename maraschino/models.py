@@ -88,6 +88,7 @@ class MediaServer(Base):
     mac_address = Column(String(100))
 
     def __init__(self, label, position, hostname, port='8080', username=None, password=None, mac_address=None):
+        self.type= type
         self.label = label
 
         if position == None:

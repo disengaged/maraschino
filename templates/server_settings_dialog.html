@@ -5,9 +5,9 @@
   <form class="inner" method="post" action="">
     <div class="formrow">
       <label for="id_server_type">Server type</label>
-         <select id="id_server_type" name="server.type">
-                <option value="PLEX">Plex</option>
-                <option value="XBMC">XBMC</option>
+         <select id="id_server_type" name="type">
+                <option value="PLEX"{% if (server.type == "PLEX") %} selected="selected"{% endif %}>PLEX</option>
+                <option value="XBMC"{% if (server.type == "XBMC") %} selected="selected"{% endif %}>XBMC</option>
               </select>
     </div>
     <div class="formrow">

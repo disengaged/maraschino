@@ -774,9 +774,10 @@ def server_settings_dialog(server_id=None):
 
         label = request.form['label']
         if not label:
-            label = 'XBMC server'
+            label = 'Media server'
 
         try:
+            server.type = request.form['type']
             server.label = label
             server.position = request.form['position']
             server.hostname = request.form['hostname']
