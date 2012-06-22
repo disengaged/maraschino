@@ -78,6 +78,7 @@ class Disk(Base):
 class MediaServer(Base):
     __tablename__ = 'xbmc_servers'
     id = Column(Integer, primary_key=True)
+    type = Column(String(15))
     label = Column(String(500))
     position = Column(Integer)
     hostname = Column(String(500))
