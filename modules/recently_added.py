@@ -103,6 +103,7 @@ def render_recently_added_movies(movie_offset=0):
 
     return render_template('recently_added_movies.html',
         recently_added_movies = recently_added_movies,
+        server_type = server_type(),
         vfs_url = vfs_url,
         movie_offset = movie_offset,
         compact_view = compact_view,
@@ -126,6 +127,7 @@ def render_recently_added_albums(album_offset=0):
 
     return render_template('recently_added_albums.html',
         recently_added_albums = recently_added_albums,
+        server_type = server_type(),
         vfs_url = vfs_url,
         album_offset = album_offset,
         compact_view = compact_view,
