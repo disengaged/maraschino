@@ -1,8 +1,8 @@
 from maraschino.tools import using_auth, get_setting_value
-from maraschino.models import Module, Setting, MediaServer
+from maraschino.models import Module, Setting, XbmcServer
 
 def server_settings():
-    servers = MediaServer.query.order_by(MediaServer.position)
+    servers = XbmcServer.query.order_by(XbmcServer.position)
 
     if servers.count() == 0:
         return {

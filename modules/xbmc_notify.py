@@ -5,7 +5,7 @@ from maraschino import app, RUNDIR, logger
 from socket import *
 from xbmc.xbmcclient import *
 from maraschino.tools import get_file_list
-from maraschino.models import MediaServer
+from maraschino.models import XbmcServer
 
 @app.route('/xhr/xbmc_notify', methods=['post'])
 def xhr_notify():
