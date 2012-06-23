@@ -1847,7 +1847,7 @@ $(document).ready(function() {
       hostname: hostname
     };
 
-    $.post(WEBROOT + '/xhr/xbmc_notify', dict, function(data){
+    $.post(WEBROOT + '/xhr/notify', dict, function(data){
       var popup = $(data);
       $('body').append(popup);
       popup.showPopup({ dispose: true });
@@ -1877,7 +1877,7 @@ $(document).ready(function() {
       message: message
     };
 
-    $.post(WEBROOT + '/xhr/xbmc_notify/send', dict, function(data) {
+    $.post(WEBROOT + '/xhr/notify/send', dict, function(data) {
       if(data['error']){
         result.append(data['error']);
       }
