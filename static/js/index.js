@@ -422,25 +422,25 @@ $(document).ready(function() {
     $.get(WEBROOT + '/xhr/controls/clean_audio');
   });
 
-  // xbmc poweron
+  // media player poweron
 
   $(document).on('click', '#library #poweron', function() {
     $.get(WEBROOT + '/xhr/controls/poweron');
   });
 
-  // xbmc poweroff
+  // media player poweroff
 
   $(document).on('click', '#library #poweroff', function() {
     $.get(WEBROOT + '/xhr/controls/poweroff');
   });
 
-  // xbmc reboot
+  // media player reboot
 
   $(document).on('click', '#library #reboot', function() {
     $.get(WEBROOT + '/xhr/controls/reboot');
   });
 
-  // xbmc suspend
+  // media player suspend
 
   $(document).on('click', '#library #suspend', function() {
     $.get(WEBROOT + '/xhr/controls/suspend');
@@ -1836,7 +1836,7 @@ $(document).ready(function() {
     });
   });
 
-  // Send XBMC notification
+  // Send media player notification
 
   $(document).on('click', '.switch_server .message', function(){
     var label = $(this).data('label');
