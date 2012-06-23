@@ -1,6 +1,7 @@
 from flask import Flask, render_template, send_file
 import jsonrpclib
 import urllib
+from plex.plexclient import PLEXLibrary
 
 from maraschino import app
 from maraschino.noneditable import *
@@ -46,19 +47,21 @@ def xhr_recently_added_albums_offset(album_offset):
 @app.route('/xhr/vfs_proxy/<path:url>')
 def xhr_vfs_proxy(url):
     import StringIO
-
-    if url.startswith('image://'):
-        url = urllib.quote(url.encode('utf-8'), '')
-        vfs_url = server_address() + '/image/' + url
-
+    
+    if (server_type()=="XBMC"):
+        if url.startswith('image://'):
+            url = urllib.quote(url.encode('utf-8'), '')
+            vfs_url = server_address() + '/image/' + url
+        else:
+            try:
+                vfs_url = '%s/vfs/' % (server_address())
+            except:
+                vfs_url = None
+    
+            vfs_url += 'special://' + url
     else:
-        try:
-            vfs_url = '%s/vfs/' % (server_address())
-        except:
-            vfs_url = None
-
-        vfs_url += 'special://' + url
-
+        vfs_url=server_address()+"/"+url
+    
     img = StringIO.StringIO(urllib.urlopen(vfs_url).read())
     return send_file(img, mimetype='image/jpeg')
 
@@ -68,10 +71,14 @@ def render_recently_added_episodes(episode_offset=0):
     view_info = get_setting_value('recently_added_info') == '1'
 
     try:
-        xbmc = jsonrpclib.Server(server_api_address())
-        recently_added_episodes = get_recently_added_episodes(xbmc, episode_offset)
-        vfs_url = maraschino.WEBROOT + '/xhr/vfs_proxy/'
-
+        if (server_type()=="XBMC"):
+            vfs_url = maraschino.WEBROOT + '/xhr/vfs_proxy/'
+            xbmc = jsonrpclib.Server(server_api_address())
+            recently_added_episodes = get_recently_added_episodes(xbmc, episode_offset)
+        else:
+            vfs_url = maraschino.WEBROOT + '/xhr/vfs_proxy'
+            plexlibrary=PLEXLibrary(server_address())
+            recently_added_episodes = plex_get_recently_added_episodes(plexlibrary, episode_offset)
     except:
         recently_added_episodes = []
         vfs_url = None
@@ -82,7 +89,7 @@ def render_recently_added_episodes(episode_offset=0):
         vfs_url = vfs_url,
         episode_offset = episode_offset,
         compact_view = compact_view,
-        total_episodes = total_episodes,
+        total_episodes = 6,
         view_info = view_info,
     )
 
@@ -157,6 +164,15 @@ def get_num_recent_albums():
     except:
         return 3
 
+def plex_get_recently_added_episodes(plexlibrary, episode_offset=0):
+    
+    recently_added_episodes=plexlibrary.getrecentlyaddedepisodes()
+    total_episodes=len(recently_added_episodes)
+    num_recent_videos = get_num_recent_episodes()
+    recently_added_episodes = recently_added_episodes[episode_offset:num_recent_videos + episode_offset]
+    
+    return recently_added_episodes
+    
 
 def get_recently_added_episodes(xbmc, episode_offset=0):
     num_recent_videos = get_num_recent_episodes()
