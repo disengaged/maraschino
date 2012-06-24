@@ -83,11 +83,10 @@ class PLEXLibrary(object):
 
 class PLEXClient(object):
     '''
-    connects to a Plex client for various tasks 
+    connects to a Plex client (aka the Plex Client) for various tasks 
     '''
     def sendmessage (self, message):
-        formedurl="http://"+self.server+":"+self.port+"/xbmcCmds/XbmcHttp?command=ExecBuiltIn(Notification("+urllib2.quote(message)+"))"
-        print formedurl 
+        formedurl="http://"+self.server+":"+self.port+"/xbmcCmds/XbmcHttp?command=ExecBuiltIn(Notification("+urllib2.quote(message)+"))" 
         urllib2.urlopen(formedurl)
         
         pass
