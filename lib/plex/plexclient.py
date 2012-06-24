@@ -13,7 +13,7 @@ class PLEXLibrary(object):
     '''
     Connects to a Plex Media Server for various tasks
     '''
-    TVitem = namedtuple("TVitem", 'showtitle synopsis title summary duration season episode viewcount')
+    TVitem = namedtuple("TVitem", 'title season episode showtitle playcount thumbnail')
     MovieItem = namedtuple ("MovieItem", 'title summary')
     ClientItem = namedtuple ("ClientItem", 'name host address port version uniqueid')
     
@@ -62,6 +62,24 @@ class PLEXLibrary(object):
                                               node.get('machineIdentifier')
                                               ))
         return Clients
+    
+    def getrecentlyaddedepisodes (self):
+        '''
+        recentlyAddedTV returns the recently added TV episodes from the library
+        '''
+        TVItems=[]
+        root = self.plexgetxml("/library/sections/"+self.TVLibrary+"/recentlyAdded")
+        for node in root:
+                TVItems.append(self.TVitem(node.get('title'),
+                                           node.get('parentIndex'), 
+                                           node.get('index'),
+                                           node.get('grandparentTitle'),
+                                           "0",
+                                          node.get('thumb'))) 
+                                          
+                                          
+        return TVItems
+        #['title', 'season', 'episode', 'showtitle', 'playcount', 'thumbnail'])
 
 class PLEXClient(object):
     '''
