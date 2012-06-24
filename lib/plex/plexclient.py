@@ -17,14 +17,13 @@ class PLEXLibrary(object):
     MovieItem = namedtuple ("MovieItem", 'title summary')
     ClientItem = namedtuple ("ClientItem", 'name host address port version uniqueid')
     
-    def __init__(self, server="127.0.0.1", port="324000", MovieLibID="1", TVLibID="2", MusicLibID="3"):
+    def __init__(self, server="127.0.0.1:32400", MovieLibID="1", TVLibID="2", MusicLibID="3"):
         '''
         Constructor
-        input: server, port 
+        input: server including port 
         output: none
         '''
         self.server=server
-        self.port=port
         self.TVLibrary=TVLibID
         self.MovieLibrary=MovieLibID
         self.MusicLibrary=MusicLibID
@@ -45,7 +44,7 @@ class PLEXLibrary(object):
         '''
         plexgetxml returns the root for an XML for Plex
         '''
-        formedurl="http://"+self.server+":"+self.port+location
+        formedurl=self.server+location
         tree = ElementTree.parse(urllib2.urlopen(formedurl))
         root=tree.getroot()
         return root
