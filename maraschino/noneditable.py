@@ -41,9 +41,9 @@ def server_username_password():
     username_password = ''
     server = server_settings()
 
-    if server['username'] != None:
+    if server['username']:
         username_password = server['username']
-        if server['password'] != None:
+        if server['password']:
             username_password += ':' + server['password']
         username_password += '@'
 
