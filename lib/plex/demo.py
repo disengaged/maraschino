@@ -13,14 +13,20 @@ PlexPort=raw_input("Enter Plex Media Server port:")
 MessageTitle="Test message"
 MessageText="Sent to all clients"
 
-server=PLEXLibrary(PlexServer,PlexPort)
-for servert in server.getclients():
-    print servert.address
-    print servert.uniqueid
-    print servert.version
-    print servert.name
-    print servert.host
-    client=PLEXClient(servert.host,servert.port)
-    client.sendmessage(MessageTitle+","+MessageText)
+server=PLEXLibrary("http://"+PlexServer+":"+PlexPort)
+episodes=server.getrecentlyaddedepisodes()
+#===============================================================================
+# for servert in server.getclients():
+#    print servert.address
+#    print servert.uniqueid
+#    print servert.version
+#    print servert.name
+#    print servert.host
+#    
+#    client=PLEXClient(servert.host,servert.port)
+#    client.sendmessage(MessageTitle+","+MessageText)
+#===============================================================================
+for episode in episodes:
+    print episode.title.encode('ascii','ignore') 
     
 
