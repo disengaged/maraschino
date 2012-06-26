@@ -61,7 +61,7 @@ def render_recently_added_episodes(episode_offset=0):
         recently_added_episodes = recently_added_episodes,
         episode_offset = episode_offset,
         compact_view = compact_view,
-        total_episodes = 6,
+        total_episodes = total_episodes,
         view_info = view_info,
     )
 
@@ -129,6 +129,8 @@ def get_num_recent_albums():
         return 3
 
 def plex_get_recently_added_episodes(plexlibrary, episode_offset=0):
+    global total_episodes
+    total_episodes = None
     
     recently_added_episodes=plexlibrary.getrecentlyaddedepisodes()
     total_episodes=len(recently_added_episodes)
