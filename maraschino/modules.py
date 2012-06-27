@@ -101,19 +101,9 @@ AVAILABLE_MODULES = [
                 'description': 'Number of episodes to display',
             },
             {
-                'key': 'plex_movielib_id',
-                'value': 1,
-                'description': 'Library ID Movies (Plex only)',
-            },
-            {
                 'key': 'plex_tvlib_id',
                 'value': 2,
                 'description': 'Library ID TV Series (Plex only)',
-            },
-            {
-                'key': 'plex_musiclib_id',
-                'value': 3,
-                'description': 'Library ID Music (Plex only)',
             },
             {
                 'key': 'recently_added_compact',
@@ -148,6 +138,11 @@ AVAILABLE_MODULES = [
                 'value': 3,
                 'description': 'Number of movies to display',
             },
+            {                    {
+                'key': 'plex_movielib_id',
+                'value': 1,
+                'description': 'Library ID Movies (Plex only)',
+            },
             {
                 'key': 'recently_added_movies_compact',
                 'value': '0',
@@ -180,6 +175,11 @@ AVAILABLE_MODULES = [
                 'key': 'num_recent_albums',
                 'value': 3,
                 'description': 'Number of albums to display',
+            },
+            {
+                'key': 'plex_musiclib_id',
+                'value': 3,
+                'description': 'Library ID Music (Plex only)',
             },
             {
                 'key': 'recently_added_albums_compact',
