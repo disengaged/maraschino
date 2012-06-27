@@ -14,7 +14,7 @@ MessageTitle="Test message"
 MessageText="Sent to all clients"
 
 server=PLEXLibrary("http://"+PlexServer+":"+PlexPort)
-episodes=server.getrecentlyaddedepisodes()
+movies=server.getrecentlyaddedmovies()
 #===============================================================================
 # for servert in server.getclients():
 #    print servert.address
@@ -26,7 +26,9 @@ episodes=server.getrecentlyaddedepisodes()
 #    client=PLEXClient(servert.host,servert.port)
 #    client.sendmessage(MessageTitle+","+MessageText)
 #===============================================================================
-for episode in episodes:
-    print episode.title.encode('ascii','ignore') 
+#===============================================================================
+# for episode in episodes:
+#    print episode.title.encode('ascii','ignore') 
+#===============================================================================
     
 
