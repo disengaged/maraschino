@@ -138,7 +138,7 @@ AVAILABLE_MODULES = [
                 'value': 3,
                 'description': 'Number of movies to display',
             },
-            {                    {
+            {                    
                 'key': 'plex_movielib_id',
                 'value': 1,
                 'description': 'Library ID Movies (Plex only)',
