@@ -72,9 +72,13 @@ def render_recently_added_movies(movie_offset=0):
     view_info = get_setting_value('recently_added_movies_info') == '1'
 
     try:
-        xbmc = jsonrpclib.Server(server_api_address())
-        recently_added_movies = get_recently_added_movies(xbmc, movie_offset)
-
+        if (server_type()=="XBMC"):
+            xbmc = jsonrpclib.Server(server_api_address())
+            recently_added_movies = get_recently_added_movies(xbmc, movie_offset)
+        else:
+            plexlibrary=PLEXLibrary(server_address())
+            recently_added_movies = plex_get_recently_added_movies(plexlibrary, movie_offset)
+            
     except:
         recently_added_movies = []
 
@@ -166,6 +170,17 @@ def get_recently_added_episodes(xbmc, episode_offset=0):
         recently_added_episodes = []
 
     return recently_added_episodes
+
+def plex_get_recently_added_movies(plexlibrary, movie_offset=0):
+    global total_movies
+    total_movies = None
+    
+    recently_added_movies=plexlibrary.getrecentlyaddedmovies()
+    total_movies=len(recently_added_movies)
+    num_recent_videos = get_num_recent_movies()
+    recently_added_movies = recently_added_movies[movie_offset:num_recent_videos + movie_offset]
+    
+    return recently_added_movies
 
 
 def get_recently_added_movies(xbmc, movie_offset=0):
