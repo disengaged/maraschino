@@ -74,10 +74,8 @@ class PLEXLibrary(object):
                                            node.get('parentIndex'), 
                                            node.get('index'),
                                            node.get('grandparentTitle'),
-                                           "0",
+                                           node.get('viewCount'),
                                           node.get('thumb'))) 
-                                          
-                                          
         return TVItems
     
     def getrecentlyaddedmovies (self):
@@ -90,7 +88,7 @@ class PLEXLibrary(object):
                 MovieItems.append(self.MovieItem(node.get('title'),
                                            node.get('year'), 
                                            node.get('rating'),
-                                           "0",
+                                           node.get('viewCount'),
                                            node.get('thumb'))) 
         return MovieItems
     

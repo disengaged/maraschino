@@ -140,13 +140,25 @@ def get_num_recent_albums():
         return 3
 
 def plex_get_recently_added_episodes(plexlibrary, episode_offset=0):
+    num_recent_videos = get_num_recent_episodes()
     global total_episodes
     total_episodes = None
-    recently_added_episodes=plexlibrary.getrecentlyaddedepisodes()
-    total_episodes=len(recently_added_episodes)
-    num_recent_videos = get_num_recent_episodes()
-    recently_added_episodes = recently_added_episodes[episode_offset:num_recent_videos + episode_offset]
-    
+    try:
+        recently_added_episodes=plexlibrary.getrecentlyaddedepisodes()
+        if get_setting_value('recently_added_watched_episodes') == '0':
+            unwatched = []
+            for episodes in recently_added_episodes:
+                episode_playcount = episodes.playcount
+                
+                if episode_playcount == None:
+                    unwatched.append(episodes)
+                    total_episodes = len(unwatched)
+            recently_added_episodes = unwatched[episode_offset:num_recent_videos + episode_offset]
+        else:
+            total_episodes=len(recently_added_episodes)
+            recently_added_episodes = recently_added_episodes[episode_offset:num_recent_videos + episode_offset]
+    except:
+        recently_added_episodes = []
     return recently_added_episodes
     
 
@@ -178,13 +190,33 @@ def get_recently_added_episodes(xbmc, episode_offset=0):
     return recently_added_episodes
 
 def plex_get_recently_added_movies(plexlibrary, movie_offset=0):
+    num_recent_videos = get_num_recent_movies()
     global total_movies
     total_movies = None
     
-    recently_added_movies=plexlibrary.getrecentlyaddedmovies()
-    total_movies=len(recently_added_movies)
-    num_recent_videos = get_num_recent_movies()
-    recently_added_movies = recently_added_movies[movie_offset:num_recent_videos + movie_offset]
+    #recently_added_movies=plexlibrary.getrecentlyaddedmovies()
+    #total_movies=len(recently_added_movies)
+    #num_recent_videos = get_num_recent_movies()
+    #recently_added_movies = recently_added_movies[movie_offset:num_recent_videos + movie_offset]
+    
+    try:
+        recently_added_movies=plexlibrary.getrecentlyaddedmovies()
+        if get_setting_value('recently_added_watched_movies') == '0':
+            unwatched = []
+            for movies in recently_added_movies:
+                movie_playcount = movies.playcount
+
+                if movie_playcount == None:
+                    unwatched.append(movies)
+                    total_movies = len(unwatched)
+
+            recently_added_movies = unwatched[movie_offset:num_recent_videos + movie_offset]
+        else:
+            total_movies = len(recently_added_movies)
+            recently_added_movies = recently_added_movies[movie_offset:num_recent_videos + movie_offset]
+
+    except:
+        recently_added_movies = []
     
     return recently_added_movies
 
