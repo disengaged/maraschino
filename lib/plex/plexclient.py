@@ -94,17 +94,18 @@ class PLEXLibrary(object):
                                            node.get('thumb'))) 
         return MovieItems
     
-    def getrecentlyaddedmmusic (self):
+    def getrecentlyaddedalbums (self):
         '''
-        getrecentlyaddedmusic returns the recently added music from the library
+        getrecentlyaddedalbums returns the recently added music from the library
         '''
         MusicItems=[]
-        root = self.plexgetxml("/library/sections/"+self.MovieLibrary+"/recentlyAdded")
+        root = self.plexgetxml("/library/sections/"+self.MusicLibrary+"/recentlyAdded")
         for node in root:
                 MusicItems.append(self.MusicItem(node.get('title'),
                                            node.get('year'), 
+                                           node.get('rating'),
                                            node.get('artist'),
-                                           node.get('thumb'))) 
+                                           node.get('thumb')))
         return MusicItems    
         
 

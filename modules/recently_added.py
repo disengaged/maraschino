@@ -100,8 +100,9 @@ def render_recently_added_albums(album_offset=0):
             xbmc = jsonrpclib.Server(server_api_address())
             recently_added_albums = get_recently_added_albums(xbmc, album_offset)
         else:
-            plexlibrary=PLEXLibrary(server_address())
-            #recently_added_albums = plex_get_recently_added_albums(plexlibrary, album_offset)
+            plexalbumlib=get_setting_value('plex_musiclib_id')
+            plexlibrary=PLEXLibrary(server_address(),MusicLibID=plexalbumlib)
+            recently_added_albums = plex_get_recently_added_albums(plexlibrary, album_offset)
 
     except:
         recently_added_albums = []
@@ -139,7 +140,6 @@ def get_num_recent_albums():
 def plex_get_recently_added_episodes(plexlibrary, episode_offset=0):
     global total_episodes
     total_episodes = None
-    
     recently_added_episodes=plexlibrary.getrecentlyaddedepisodes()
     total_episodes=len(recently_added_episodes)
     num_recent_videos = get_num_recent_episodes()
@@ -218,13 +218,13 @@ def plex_get_recently_added_albums(plexlibrary, album_offset=0):
     global total_albums
     total_albums = None
     recently_added_albums = []
+    recently_added_albums=plexlibrary.getrecentlyaddedalbums()
     
-    recently_added_albums=plexlibrary.getrecentlyaddedmusic()
     total_albums=len(recently_added_albums)
     num_recent_albums = get_num_recent_albums()
     recently_added_albums = recently_added_albums[album_offset:num_recent_albums + album_offset]
     
-    return recently_added_album
+    return recently_added_albums
 
 def get_recently_added_albums(xbmc, album_offset=0):
     num_recent_albums = get_num_recent_albums()
