@@ -51,7 +51,8 @@ def render_recently_added_episodes(episode_offset=0):
             xbmc = jsonrpclib.Server(server_api_address())
             recently_added_episodes = get_recently_added_episodes(xbmc, episode_offset)
         else:
-            plexlibrary=PLEXLibrary(server_address())
+            plextvlib=get_setting_value('plex_tvlib_id')
+            plexlibrary=PLEXLibrary(server_address(),TVLibID=plextvlib)
             recently_added_episodes = plex_get_recently_added_episodes(plexlibrary, episode_offset)
 
     except:
@@ -76,7 +77,8 @@ def render_recently_added_movies(movie_offset=0):
             xbmc = jsonrpclib.Server(server_api_address())
             recently_added_movies = get_recently_added_movies(xbmc, movie_offset)
         else:
-            plexlibrary=PLEXLibrary(server_address())
+            plexmovielib=get_setting_value('plex_movielib_id')
+            plexlibrary=PLEXLibrary(server_address(), MovieLibID=plexmovielib)
             recently_added_movies = plex_get_recently_added_movies(plexlibrary, movie_offset)
             
     except:
