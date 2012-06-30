@@ -244,14 +244,14 @@ def get_recently_added_movies(xbmc, movie_offset=0):
     return recently_added_movies
 
 def plex_get_recently_added_albums(plexlibrary, album_offset=0):
-    global total_albums
-    total_albums = None
-    recently_added_albums = []
-    recently_added_albums=plexlibrary.getrecentlyaddedalbums()
-    
-    total_albums=len(recently_added_albums)
     num_recent_albums = get_num_recent_albums()
-    recently_added_albums = recently_added_albums[album_offset:num_recent_albums + album_offset]
+
+    try:
+        recently_added_albums=plexlibrary.getrecentlyaddedalbums()
+        recently_added_albums = recently_added_albums[album_offset:num_recent_albums + album_offset]
+
+    except:
+        recently_added_albums = []
     
     return recently_added_albums
 
