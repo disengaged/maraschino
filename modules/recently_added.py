@@ -194,11 +194,6 @@ def plex_get_recently_added_movies(plexlibrary, movie_offset=0):
     global total_movies
     total_movies = None
     
-    #recently_added_movies=plexlibrary.getrecentlyaddedmovies()
-    #total_movies=len(recently_added_movies)
-    #num_recent_videos = get_num_recent_movies()
-    #recently_added_movies = recently_added_movies[movie_offset:num_recent_videos + movie_offset]
-    
     try:
         recently_added_movies=plexlibrary.getrecentlyaddedmovies()
         if get_setting_value('recently_added_watched_movies') == '0':
