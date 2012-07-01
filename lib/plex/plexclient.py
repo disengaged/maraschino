@@ -115,7 +115,6 @@ class PLEXClient(object):
         formedurl="http://"+self.server+":"+self.port+"/xbmcCmds/XbmcHttp?command=ExecBuiltIn(Notification("+urllib2.quote(message)+"))" 
         urllib2.urlopen(formedurl)
         
-        pass
 
     def __init__(self, server="127.0.0.1", port="3000"):
         '''
