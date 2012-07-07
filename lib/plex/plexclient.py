@@ -6,7 +6,7 @@ Created on Jun 23, 2012
 __version__="0.1"
 
 import urllib2
-from elementtree import ElementTree
+import xml.etree.ElementTree as ElementTree
 from collections import namedtuple
     
 class PLEXLibrary(object):
