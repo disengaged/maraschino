@@ -108,6 +108,17 @@ class PLEXLibrary(object):
                                            node.get('thumb')))
         return MusicItems
     
+    def currently_playing(self):
+        # read all clients, create array with currently playing
+        currentplay=[]
+        playerinfo=[]
+        for connectedclient in self.getclients():
+            client=PLEXClient(connectedclient.host,connectedclient.port)
+            curplay,playinfo=client.currently_playing()
+            curplay['host']=connectedclient.host
+            currentplay.append(curplay)
+            playerinfo.append(playinfo)
+        return currentplay,playerinfo
 
 class PLEXClient(object):
     '''
@@ -136,7 +147,7 @@ class PLEXClient(object):
         toprocess = toprocess.split('<li>')
         
         curplay={}
-        curplay['fanart']=''
+        #curplay['fanart']=''
         curplay['tvshowid']=0
         playerinfo={}
         playerinfo['shuffled']='Unknown'
@@ -150,10 +161,11 @@ class PLEXClient(object):
             elif line.startswith('Artist'):
                 curplay['albumartist']=''
                 curplay['artistid']=0
-                curplay['artist']=line[7:].strip()
+                curplay['artist']=line[7:].strip().decode('utf-8','ignore')
             elif line.startswith('Album'):
                 curplay['albumid']=0
-                curplay['album']=line[6:].strip()
+                curplay['album']=line[6:].strip().decode('utf-8','ignore')
+                
             elif line.startswith('Lyrics'):
                 curplay['lyrics']=line[7:].strip()
             elif line.startswith('URL'):
@@ -164,6 +176,8 @@ class PLEXClient(object):
                 curplay['songno']=line[7:].strip()
             elif line.startswith("Filename"):
                 curplay['filename']=line[9:].strip()
+                if (curplay['filename']=='[Nothing Playing]'):
+                    curplay['playstatus']='Stopped'
             elif line.startswith("VideoNo"):
                 curplay['videono']=line[8:].strip()
             elif line.startswith("Type"):
@@ -171,11 +185,11 @@ class PLEXClient(object):
             elif line.startswith("Show Title"):
                 curplay['showtitle']=line[11:].strip()
             elif line.startswith("Title"):
-                curplay['title']=line[6:].strip()
+                curplay['title']=line[6:].strip().decode('utf-8','ignore')
             elif line.startswith("Plotoutline"):
-                curplay['plotoutline']=line[12:].strip()
+                curplay['plotoutline']=line[12:].strip().decode('utf-8','ignore')
             elif line.startswith("Plot"):
-                curplay['plot']=line[5:].strip()
+                curplay['plot']=line[5:].strip().decode('utf-8','ignore')
             elif line.startswith("Year"):
                 curplay['year']=line[5:].strip()
             elif line.startswith("Season"):
@@ -183,29 +197,33 @@ class PLEXClient(object):
             elif line.startswith("Episode"):
                 curplay['episode']=line[8:].strip()
             elif line.startswith("Thumb"):
-                curplay['thumbnail']=line[6:].strip()
+                thumb=line[6:].strip()
+                curplay['thumbnail']='http://'+self.server+":"+self.port+"/vfs/"+thumb
+                curplay['fanart']='http://'+self.server+":"+self.port+"/vfs/"+thumb[:-4]
             elif line.startswith("Time"):
                 time=line[5:].strip()
                 time=time.split(':')
                 if len(time)==1:
-                    curplay['time']={'hours':0,'minutes':0,'seconds':time}
+                    playerinfo['time']={'hours':0,'minutes':0,'seconds':str2int(time)}
                 elif len(time)==2:
-                    curplay['time']={'hours':0, 'minutes':time[0],'seconds':time[1]}
+                    playerinfo['time']={'hours':0, 'minutes':str2int(time[0]),'seconds':str2int(time[1])}
                 elif len(time)==3:
-                    curplay['time']={'hours':time[0], 'minutes': time[1],'seconds':time[2]}
+                    playerinfo['time']={'hours':str2int(time[0]), 'minutes': str2int(time[1]),'seconds':str2int(time[2])}
             elif line.startswith("Duration"):
                 duration=line[9:].strip()
                 time=duration.split(':')
                 if len(time)==1:
-                    curplay['duration']={'hours':0,'minutes':0,'seconds':time}
+                    playerinfo['totaltime']={'hours':0,'minutes':0,'seconds':str2int(time)}
                 elif len(time)==2:
-                    curplay['duration']={'hours':0, 'minutes':time[0],'seconds':time[1]}
+                    playerinfo['totaltime']={'hours':0, 'minutes':str2int(time[0]),'seconds':str2int(time[1])}
                 elif len(time)==3:
-                    curplay['duration']={'hours':time[0], 'minutes': time[1],'seconds':time[2]}
+                    playerinfo['totaltime']={'hours':str2int(time[0]), 'minutes': str2int(time[1]),'seconds':str2int(time[2])}
             elif line.startswith("Percentage"):
                 playerinfo['percentage']=line[11:].strip()
             elif line.startswith("File size"):
                 curplay['filesize']=line[10:].strip()
             elif line.startswith("Changed"):
                 curplay['changed']=line[8:].strip()
+            if ('year' not in curplay):
+                curplay['year']=0
         return curplay,playerinfo
