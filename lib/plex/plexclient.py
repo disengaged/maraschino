@@ -10,6 +10,19 @@ import time
 import xml.etree.ElementTree as ElementTree
 from collections import namedtuple
     
+    
+def str2int (string):
+    ''' 
+    converts a string to an int
+    input: string to convert
+    output: integer
+    '''
+    try:
+        i = int(string)
+    except (ValueError,TypeError):
+        i = 0
+    return i
+    
 class PLEXLibrary(object):
     '''
     Connects to a Plex Media Server for various tasks
@@ -29,18 +42,6 @@ class PLEXLibrary(object):
         self.TVLibrary=TVLibID
         self.MovieLibrary=MovieLibID
         self.MusicLibrary=MusicLibID
-
-    def str2int (self,string):
-        ''' 
-        converts a string to an int
-        input: string to convert
-        output: integer
-        '''
-        try:
-            i = int(string)
-        except (ValueError,TypeError):
-            i = 0
-        return i
     
     def plexgetxml (self, location):
         '''
@@ -105,8 +106,8 @@ class PLEXLibrary(object):
                                            node.get('rating'),
                                            node.get('artist'),
                                            node.get('thumb')))
-        return MusicItems    
-        
+        return MusicItems
+    
 
 class PLEXClient(object):
     '''
