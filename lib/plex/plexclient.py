@@ -3,9 +3,10 @@ Created on Jun 23, 2012
 
 @author: Anne Jan Elsinga
 '''
-__version__="0.1"
+__version__="0.1.1"
 
 import urllib2
+import time
 import xml.etree.ElementTree as ElementTree
 from collections import namedtuple
     
@@ -111,7 +112,7 @@ class PLEXClient(object):
     '''
     connects to a Plex client (aka the Plex Client) for various tasks 
     '''
-    def sendmessage (self, message):
+    def sendmessage (self, message): 
         urllib2.urlopen(self.commandurl+"ExecBuiltIn(Notification("+urllib2.quote(message)+"))")
         
 
@@ -123,3 +124,87 @@ class PLEXClient(object):
         '''
         self.server=server
         self.port=port
+        self.commandurl="http://"+self.server+":"+self.port+"/xbmcCmds/XbmcHttp?command="
+
+    def currently_playing(self):
+        url=urllib2.urlopen(self.commandurl+"GetCurrentlyPlaying")
+        currently_playing_page=url.read()
+        url.close()
+        toprocess=currently_playing_page.replace("<html>","")
+        toprocess=toprocess.replace("</html>","")
+        toprocess = toprocess.split('<li>')
+        
+        curplay={}
+        curplay['fanart']=''
+        curplay['tvshowid']=0
+        playerinfo={}
+        playerinfo['shuffled']='Unknown'
+        playerinfo['repeat']='Unknown'        
+        for line in toprocess:
+            if line.startswith("PlayStatus"):
+                playStatus=line[11:].strip()
+                curplay ['playstatus']=playStatus
+            elif line.startswith('Track'):
+                curplay['track']=line[6:].strip()
+            elif line.startswith('Artist'):
+                curplay['albumartist']=''
+                curplay['artistid']=0
+                curplay['artist']=line[7:].strip()
+            elif line.startswith('Album'):
+                curplay['albumid']=0
+                curplay['album']=line[6:].strip()
+            elif line.startswith('Lyrics'):
+                curplay['lyrics']=line[7:].strip()
+            elif line.startswith('URL'):
+                curplay['url']=line[4:].strip()
+            elif line.startswith('Samplerate'):
+                curplay['samplerate']=line[11:].strip()
+            elif line.startswith('SongNo'):
+                curplay['songno']=line[7:].strip()
+            elif line.startswith("Filename"):
+                curplay['filename']=line[9:].strip()
+            elif line.startswith("VideoNo"):
+                curplay['videono']=line[8:].strip()
+            elif line.startswith("Type"):
+                curplay['type']=line[5:].strip().lower()
+            elif line.startswith("Show Title"):
+                curplay['showtitle']=line[11:].strip()
+            elif line.startswith("Title"):
+                curplay['title']=line[6:].strip()
+            elif line.startswith("Plotoutline"):
+                curplay['plotoutline']=line[12:].strip()
+            elif line.startswith("Plot"):
+                curplay['plot']=line[5:].strip()
+            elif line.startswith("Year"):
+                curplay['year']=line[5:].strip()
+            elif line.startswith("Season"):
+                curplay['season']=line[7:].strip()
+            elif line.startswith("Episode"):
+                curplay['episode']=line[8:].strip()
+            elif line.startswith("Thumb"):
+                curplay['thumbnail']=line[6:].strip()
+            elif line.startswith("Time"):
+                time=line[5:].strip()
+                time=time.split(':')
+                if len(time)==1:
+                    curplay['time']={'hours':0,'minutes':0,'seconds':time}
+                elif len(time)==2:
+                    curplay['time']={'hours':0, 'minutes':time[0],'seconds':time[1]}
+                elif len(time)==3:
+                    curplay['time']={'hours':time[0], 'minutes': time[1],'seconds':time[2]}
+            elif line.startswith("Duration"):
+                duration=line[9:].strip()
+                time=duration.split(':')
+                if len(time)==1:
+                    curplay['duration']={'hours':0,'minutes':0,'seconds':time}
+                elif len(time)==2:
+                    curplay['duration']={'hours':0, 'minutes':time[0],'seconds':time[1]}
+                elif len(time)==3:
+                    curplay['duration']={'hours':time[0], 'minutes': time[1],'seconds':time[2]}
+            elif line.startswith("Percentage"):
+                playerinfo['percentage']=line[11:].strip()
+            elif line.startswith("File size"):
+                curplay['filesize']=line[10:].strip()
+            elif line.startswith("Changed"):
+                curplay['changed']=line[8:].strip()
+        return curplay,playerinfo
