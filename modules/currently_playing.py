@@ -40,13 +40,14 @@ def xhr_currently_playing():
                     player_info=player_info[currently_playingplayer]
                     fanart = currently_playing['fanart']
                     itemart = currently_playing['thumbnail']
-                    volume=0
+                    volume=100
             if (currently_playing['playstatus']=='Stopped'):
                 raise Exception
     except:
         return jsonify({ 'playing': False })
 
     return render_template('currently_playing.html',
+        servertype=server_type(),
         currently_playing = currently_playing,
         fanart = fanart,
         itemart = itemart,
