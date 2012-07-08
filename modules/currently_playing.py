@@ -41,6 +41,7 @@ def xhr_currently_playing():
                     fanart = currently_playing['fanart']
                     itemart = currently_playing['thumbnail']
                     volume=100
+                    break
             if (currently_playing['playstatus']=='Stopped'):
                 raise Exception
     except:

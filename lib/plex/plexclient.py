@@ -119,7 +119,21 @@ class PLEXLibrary(object):
             currentplay.append(curplay)
             playerinfo.append(playinfo)
         return currentplay,playerinfo
-
+    
+    def active_players(self):
+        # returns active player
+        activeply=[]
+        current,player=self.currently_playing()
+        for active in current:
+            if active['playstatus'] !='Stopped':
+                active={'host': active['host']}
+                activeply.append(active)
+        return activeply
+    
+    def do_action (self,client, action):
+        formedurl=self.server+"/system/players/"+client+"/"+action
+        urllib2.urlopen(formedurl)
+        
 class PLEXClient(object):
     '''
     connects to a Plex client (aka the Plex Client) for various tasks 

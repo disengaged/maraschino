@@ -47,6 +47,11 @@ def print_menu():
         print "2. Show recently added movies"
         print "3. Show recently added episodes"
         print "4. Show recently added albums"
+        print "5. Show currently playing (info)"
+        print "6. show connected clients"
+        print "7. Send message to all connected clients"
+        print "8. Play default client"
+        print "9. Show currently playing clients"
     print 
     print "q. quit"
     print 
@@ -130,8 +135,40 @@ def showrecentlyairedseries():
     AllSeries=mediaplayer.recentlyAiredTV()
     for x in range (0,maxnum(AllSeries,NumOfItems)):
         showseries(AllSeries[x])
+    wait_for_enter() 
+    
+def doe_wat():
+    mediaplayer.do_action ('192.168.1.102', 'playback/pause')
+    #possible commands under playback: play, pause, stop, rewind, fastForward, stepForward
+    #bigStepForward, stepBack, bigStepBack, skipNext, skipPrevious
+    wait_for_enter()
+    
+def showcurrentlyplaying():
+    allPlaying,playerinfo=mediaplayer.currently_playing()
+    print allPlaying,playerinfo
+    wait_for_enter()
+    
+def showplayingclients():
+    print mediaplayer.active_players()
+    wait_for_enter()
+    
+def showconnectedclients():
+    for client in mediaplayer.getclients():
+        print "address: "+ client.address
+        print "unique ID: "+client.uniqueid
+        print "version: " + client.version
+        print "client name: " +client.name
+        print "client hostname: " +client.host
     wait_for_enter()        
 
+def sendmessagetoallclients():
+    MessageTitle=raw_input("Enter a title for the message:")
+    MessageText=raw_input("Enter a message:")
+    for connectedclient in mediaplayer.getclients():
+        client=PLEXClient(connectedclient.host,connectedclient.port)
+        client.sendmessage(MessageTitle+","+MessageText)
+    wait_for_enter()
+    
 def buildmenu():
     global actions
     while True:
@@ -161,5 +198,6 @@ def showalbums(album):
     
 
 if __name__ == '__main__':
-    actions = {"1": get_connection_info, "2": showrecentlyaddedmovies, "3": showrecentlyaddedseries,"4": showrecentlyaddedalbums}
+    actions = {"1": get_connection_info, "2": showrecentlyaddedmovies, "3": showrecentlyaddedseries,"4": showrecentlyaddedalbums, 
+               "5": showcurrentlyplaying, "6": showconnectedclients, "7": sendmessagetoallclients, "8": doe_wat, '9':showplayingclients}
     buildmenu()   
