@@ -8,8 +8,6 @@ __version__="0.1.1"
 import urllib2
 import time
 import xml.etree.ElementTree as ElementTree
-from collections import namedtuple
-    
     
 def str2int (string):
     ''' 
@@ -27,10 +25,6 @@ class PLEXLibrary(object):
     '''
     Connects to a Plex Media Server for various tasks
     '''
-    TVitem = namedtuple("TVitem", 'title season episode showtitle playcount thumbnail')
-    MovieItem = namedtuple ("MovieItem", 'title year rating playcount thumbnail')
-    MusicItem = namedtuple ("MusicItem", 'title year rating artist thumbnail')
-    ClientItem = namedtuple ("ClientItem", 'name host address port version uniqueid')
     
     def __init__(self, server="127.0.0.1:32400", MovieLibID="1", TVLibID="2", MusicLibID="3"):
         '''
@@ -47,22 +41,20 @@ class PLEXLibrary(object):
         '''
         plexgetxml returns the root for an XML for Plex
         '''
-        formedurl=self.server+location
-        tree = ElementTree.parse(urllib2.urlopen(formedurl))
-        root=tree.getroot()
-        return root
+        try:
+            formedurl=self.server+location
+            tree = ElementTree.parse(urllib2.urlopen(formedurl))
+            root=tree.getroot()
+            return root
+        except:
+            return None
     
     def getclients(self):
         root=self.plexgetxml("/clients")
         Clients=[]
         for node in root:
-            Clients.append (self.ClientItem(node.get('name'), 
-                                              node.get('host'),
-                                              node.get('address'),
-                                              node.get('port'),
-                                              node.get('version'),
-                                              node.get('machineIdentifier')
-                                              ))
+            Clients.append({'name': node.get('name'),'host':node.get('host'),'address':node.get('address'),'port':node.get('port'),
+                    'version':node.get('version'),'uniqueid':node.get('machineIdentifier')})
         return Clients
     
     def getrecentlyaddedepisodes (self):
@@ -71,14 +63,13 @@ class PLEXLibrary(object):
         '''
         TVItems=[]
         root = self.plexgetxml("/library/sections/"+self.TVLibrary+"/recentlyAdded")
+        
         for node in root:
-                TVItems.append(self.TVitem(node.get('title'),
-                                           node.get('parentIndex'), 
-                                           node.get('index'),
-                                           node.get('grandparentTitle'),
-                                           node.get('viewCount'),
-                                          node.get('thumb'))) 
+            TVItems.append({'title':node.get('title'),'season':node.get('parentIndex'),'episode': node.get('index'),
+                            'showtitle':node.get('grandparentTitle'),'playcount':node.get('viewCount'),
+                            'thumbnail':node.get('thumb')}) 
         return TVItems
+        
     
     def getrecentlyaddedmovies (self):
         '''
@@ -87,11 +78,8 @@ class PLEXLibrary(object):
         MovieItems=[]
         root = self.plexgetxml("/library/sections/"+self.MovieLibrary+"/recentlyAdded")
         for node in root:
-                MovieItems.append(self.MovieItem(node.get('title'),
-                                           node.get('year'), 
-                                           node.get('rating'),
-                                           node.get('viewCount'),
-                                           node.get('thumb'))) 
+            MovieItems.append({'title':node.get('title'),'year':node.get('year'),'rating':node.get('rating'),
+                              'playcount':node.get('viewCount'),'thumbnail':node.get('thumb')}) 
         return MovieItems
     
     def getrecentlyaddedalbums (self):
@@ -101,11 +89,8 @@ class PLEXLibrary(object):
         MusicItems=[]
         root = self.plexgetxml("/library/sections/"+self.MusicLibrary+"/recentlyAdded")
         for node in root:
-                MusicItems.append(self.MusicItem(node.get('title'),
-                                           node.get('year'), 
-                                           node.get('rating'),
-                                           node.get('artist'),
-                                           node.get('thumb')))
+            MusicItems.append({'title':node.get('title'),'year':node.get('year'),'rating':node.get('rating'),
+                               'artist':node.get('artist'),'thumbnail':node.get('thumb')})
         return MusicItems
     
     def currently_playing(self):
@@ -113,9 +98,9 @@ class PLEXLibrary(object):
         currentplay=[]
         playerinfo=[]
         for connectedclient in self.getclients():
-            client=PLEXClient(connectedclient.host,connectedclient.port)
+            client=PLEXClient(connectedclient['host'],connectedclient['port'])
             curplay,playinfo=client.currently_playing()
-            curplay['host']=connectedclient.host
+            curplay['host']=connectedclient['host']
             currentplay.append(curplay)
             playerinfo.append(playinfo)
         return currentplay,playerinfo
@@ -132,15 +117,22 @@ class PLEXLibrary(object):
     
     def do_action (self,client, action):
         formedurl=self.server+"/system/players/"+client+"/"+action
-        urllib2.urlopen(formedurl)
+        try:
+            urllib2.urlopen(formedurl)
+            return True
+        except:
+            return None
         
 class PLEXClient(object):
     '''
     connects to a Plex client (aka the Plex Client) for various tasks 
     '''
-    def sendmessage (self, message): 
-        urllib2.urlopen(self.commandurl+"ExecBuiltIn(Notification("+urllib2.quote(message)+"))")
-        
+    def sendmessage (self, message):
+        try: 
+            urllib2.urlopen(self.commandurl+"ExecBuiltIn(Notification("+urllib2.quote(message)+"))")
+            return True
+        except:
+            return None
 
     def __init__(self, server="127.0.0.1", port="3000"):
         '''
@@ -161,7 +153,6 @@ class PLEXClient(object):
         toprocess = toprocess.split('<li>')
         
         curplay={}
-        #curplay['fanart']=''
         curplay['tvshowid']=0
         playerinfo={}
         playerinfo['shuffled']='Unknown'

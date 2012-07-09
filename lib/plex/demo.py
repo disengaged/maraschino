@@ -12,23 +12,6 @@ MovieSection=""
 AlbumSection=""
 NumOfItems=3
 mediaplayer=object
-
-
-#===============================================================================
-# for servert in server.getclients():
-#    print servert.address
-#    print servert.uniqueid
-#    print servert.version
-#    print servert.name
-#    print servert.host
-#    
-#    client=PLEXClient(servert.host,servert.port)
-#    client.sendmessage(MessageTitle+","+MessageText)
-#===============================================================================
-#===============================================================================
-# for episode in episodes:
-#    print episode.title.encode('ascii','ignore') 
-#===============================================================================
     
 def clear_screen():
     os.system( [ 'clear', 'cls' ][ os.name == 'nt' ] )
@@ -154,18 +137,18 @@ def showplayingclients():
     
 def showconnectedclients():
     for client in mediaplayer.getclients():
-        print "address: "+ client.address
-        print "unique ID: "+client.uniqueid
-        print "version: " + client.version
-        print "client name: " +client.name
-        print "client hostname: " +client.host
+        print "address: "+ client['address']
+        print "unique ID: "+client['uniqueid']
+        print "version: " + client['version']
+        print "client name: " +client['name']
+        print "client hostname: " +client['host']
     wait_for_enter()        
 
 def sendmessagetoallclients():
     MessageTitle=raw_input("Enter a title for the message:")
     MessageText=raw_input("Enter a message:")
     for connectedclient in mediaplayer.getclients():
-        client=PLEXClient(connectedclient.host,connectedclient.port)
+        client=PLEXClient(connectedclient['host'],connectedclient['port'])
         client.sendmessage(MessageTitle+","+MessageText)
     wait_for_enter()
     

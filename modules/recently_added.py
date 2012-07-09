@@ -148,14 +148,8 @@ def get_recently_added_episodes(mediaplayer, episode_offset=0):
         if get_setting_value('recently_added_watched_episodes') == '0':
             unwatched = []
             for episodes in recently_added_episodes:
-                if (server_type()=="XBMC"):
-                    episode_playcount = episodes['playcount']
-                elif (server_type()=="PLEX"):
-                    episode_playcount = episodes.playcount
-                    if episode_playcount==None:
-                        episode_playcount=0
-                        
-                if episode_playcount == 0:
+                episode_playcount = episodes['playcount']                        
+                if episode_playcount in [0, None]:
                     unwatched.append(episodes)
                     total_episodes = len(unwatched)
 
@@ -183,14 +177,8 @@ def get_recently_added_movies(mediaserver, movie_offset=0):
         if get_setting_value('recently_added_watched_movies') == '0':
             unwatched = []
             for movies in recently_added_movies:
-                if (server_type=="XBMC"):
-                    movie_playcount = movies['playcount']
-                elif (server_type=="PLEX"):
-                    movie_playcount == movies.playcount
-                    if movie_playcount==None:
-                        movie_playcount=0
-                        
-                if movie_playcount == 0:
+                movie_playcount = movies['playcount']                        
+                if movie_playcount in [0, None]:
                     unwatched.append(movies)
                     total_movies = len(unwatched)
 
