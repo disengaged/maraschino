@@ -239,6 +239,8 @@ class PLEXClient(object):
         return curplay,playerinfo
 
     def setVolume(self,volume):
+        if isinstance(volume,(int,long)):
+            volume=str(volume)
         toprocess=getHTMLbody(self.commandurl+"SetVolume("+volume+")")
         if toprocess[1].strip()=="OK":
             return True

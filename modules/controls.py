@@ -4,7 +4,7 @@ import socket
 import struct
 import urllib
 
-from plex.plexclient import PLEXLibrary
+from plex.plexclient import PLEXLibrary, PLEXClient
 from Maraschino import app
 from maraschino.noneditable import *
 from maraschino.tools import *
@@ -566,6 +566,8 @@ def xhr_controls(command):
         mediaplayer = PLEXLibrary(server_address())
         active_players=mediaplayer.active_players()
         active_player=active_players[0]
+        client=PLEXClient(active_player['host'])
+        
         if command == 'play_pause':
             logger.log('CONTROLS :: Play/Pause', 'INFO')
             try:
@@ -618,6 +620,18 @@ def xhr_controls(command):
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
                 return_response = 'failed'
+                
+        elif 'volume' in command:
+            logger.log('CONTROLS :: Volume', 'INFO')
+            try:
+                volume = command.split('_')
+                volume = int(volume[1])
+                client.setVolume(volume)
+                return_response = 'success'
+            except:
+                logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
+                return_response = 'failed'
+    
     
         return_response="success"
         
