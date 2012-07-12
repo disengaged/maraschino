@@ -35,6 +35,8 @@ def print_menu():
         print "7. Send message to all connected clients"
         print "8. Play default client"
         print "9. Show currently playing clients"
+        print "10.Show volume on all players"
+        print "11.Set volume on all players"
     print 
     print "q. quit"
     print 
@@ -135,6 +137,19 @@ def showplayingclients():
     print mediaplayer.active_players()
     wait_for_enter()
     
+def getvolume():
+    for connectedclient in mediaplayer.getclients():
+        client=PLEXClient(connectedclient['host'],connectedclient['port'])
+        print "Volume is: " + client.getVolume()
+        wait_for_enter()
+
+def setvolume():
+    volume=raw_input('Enter volume for all clients (0-100):')
+    for connectedclient in mediaplayer.getclients():
+        client=PLEXClient(connectedclient['host'],connectedclient['port'])
+        client.setVolume(volume)
+        wait_for_enter()
+    
 def showconnectedclients():
     for client in mediaplayer.getclients():
         print "address: "+ client['address']
@@ -182,5 +197,6 @@ def showalbums(album):
 
 if __name__ == '__main__':
     actions = {"1": get_connection_info, "2": showrecentlyaddedmovies, "3": showrecentlyaddedseries,"4": showrecentlyaddedalbums, 
-               "5": showcurrentlyplaying, "6": showconnectedclients, "7": sendmessagetoallclients, "8": doe_wat, '9':showplayingclients}
+               "5": showcurrentlyplaying, "6": showconnectedclients, "7": sendmessagetoallclients, "8": doe_wat, '9':showplayingclients,
+               "10": getvolume, "11": setvolume}
     buildmenu()   

@@ -20,7 +20,17 @@ def str2int (string):
     except (ValueError,TypeError):
         i = 0
     return i
-    
+
+def getHTMLbody(urltoget):
+    url=urllib2.urlopen(urltoget)
+    currently_playing_page=url.read()
+    url.close()
+    result=[]
+    toprocess=currently_playing_page.replace("<html>","")
+    toprocess=toprocess.replace("</html>","")
+    line=toprocess.split('<li>')
+    return line
+        
 class PLEXLibrary(object):
     '''
     Connects to a Plex Media Server for various tasks
@@ -102,6 +112,7 @@ class PLEXLibrary(object):
             curplay,playinfo=client.currently_playing()
             curplay['host']=connectedclient['host']
             currentplay.append(curplay)
+            playinfo['volume']=str2int(client.getVolume())
             playerinfo.append(playinfo)
         return currentplay,playerinfo
     
@@ -145,13 +156,7 @@ class PLEXClient(object):
         self.commandurl="http://"+self.server+":"+self.port+"/xbmcCmds/XbmcHttp?command="
 
     def currently_playing(self):
-        url=urllib2.urlopen(self.commandurl+"GetCurrentlyPlaying")
-        currently_playing_page=url.read()
-        url.close()
-        toprocess=currently_playing_page.replace("<html>","")
-        toprocess=toprocess.replace("</html>","")
-        toprocess = toprocess.split('<li>')
-        
+        toprocess=getHTMLbody(self.commandurl+"GetCurrentlyPlaying")
         curplay={}
         curplay['tvshowid']=0
         playerinfo={}
@@ -232,3 +237,18 @@ class PLEXClient(object):
             if ('year' not in curplay):
                 curplay['year']=0
         return curplay,playerinfo
+
+    def setVolume(self,volume):
+        if isinstance(volume,(int,long)):
+            volume=str(volume)
+        toprocess=getHTMLbody(self.commandurl+"SetVolume("+volume+")")
+        if toprocess[1].strip()=="OK":
+            return True
+        else:
+            return False
+        
+    
+    def getVolume(self):
+        toprocess=getHTMLbody(self.commandurl+"GetVolume()")
+        return toprocess[1].strip()
+        
