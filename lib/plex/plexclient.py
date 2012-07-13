@@ -247,7 +247,15 @@ class PLEXClient(object):
         else:
             return False
         
-    
+    def seekPercentage (self, percentage):
+        if isinstance(percentage,(int,long)):
+            percentage=str(percentage)
+        execute=getHTMLbody(self.commandurl+'SeekPercentage('+percentage+")")
+        if execute[1].strip()=="OK":
+            return True
+        else:
+            return False
+        
     def getVolume(self):
         toprocess=getHTMLbody(self.commandurl+"GetVolume()")
         return toprocess[1].strip()
