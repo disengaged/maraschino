@@ -631,7 +631,17 @@ def xhr_controls(command):
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
                 return_response = 'failed'
-    
+            
+        elif 'seek' in command:
+            logger.log('CONTROLS :: Seek', 'INFO')
+            try:
+                percentage = command.split('_')
+                percentage = int(percentage[1])
+                client.seekPercentage(percentage)
+                return_response = 'success'
+            except:
+                logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
+                return_response = 'failed'
     
         return_response="success"
         
