@@ -75,9 +75,11 @@ class PLEXLibrary(object):
         root = self.plexgetxml("/library/sections/"+self.TVLibrary+"/recentlyAdded")
         
         for node in root:
+            mediaelement=node.find ("Media/Part")
+            episodeid=[int(s) for s in mediaelement.get('key').split("/") if s.isdigit()][0]
             TVItems.append({'title':node.get('title'),'season':node.get('parentIndex'),'episode': node.get('index'),
                             'showtitle':node.get('grandparentTitle'),'playcount':node.get('viewCount'),
-                            'thumbnail':node.get('thumb')}) 
+                            'thumbnail':node.get('thumb'), 'episodeid':episodeid}) 
         return TVItems
         
     
