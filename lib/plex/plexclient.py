@@ -90,7 +90,7 @@ class PLEXLibrary(object):
         root = self.plexgetxml("/library/sections/"+self.MovieLibrary+"/recentlyAdded")
         for node in root:
             MovieItems.append({'title':node.get('title'),'year':node.get('year'),'rating':node.get('rating'),
-                              'playcount':node.get('viewCount'),'thumbnail':node.get('thumb')}) 
+                              'playcount':node.get('viewCount'),'thumbnail':node.get('thumb'),'movieid':node.get('ratingKey')}) 
         return MovieItems
     
     def getrecentlyaddedalbums (self):
@@ -104,12 +104,16 @@ class PLEXLibrary(object):
                                'artist':node.get('artist'),'thumbnail':node.get('thumb')})
         return MusicItems
     
-    def playfile (self,filetoplay,player):
-        url=self.server+"/library/sections/2/recentlyAdded"
+    def playfile (self,filetoplay,player,mediatype='episode'):
+        if mediatype=='episode':
+            url=self.server+"/library/sections/"+self.TVLibrary+"/recentlyAdded"
+        elif mediatype == 'movie':
+            url=self.server+"/library/sections/"+self.MovieLibrary+"/recentlyAdded"
         key='/library/metadata/'+filetoplay
         f={'path': url, 'key': key}
         url=self.server+"/system/players/"+player+"/application/playMedia?"+urllib.urlencode(f)
         result=getHTMLbody(url)
+        print url
         return True
     
     def currently_playing(self):

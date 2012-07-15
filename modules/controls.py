@@ -30,7 +30,7 @@ def xhr_play_media(file_type, media_type, media_id):
     if server_type()=="XBMC":
         xbmc = jsonrpclib.Server(server_api_address())
     elif server_type()=="PLEX":
-        plexlibrary=PLEXLibrary(server_address())
+        plexlibrary=PLEXLibrary(server_address(),TVLibID=get_setting_value('plex_tvlib_id'),MovieLibID=get_setting_value('plex_movielib_id'))
 
     if file_type == 'video':
 
@@ -91,7 +91,7 @@ def xhr_play_media(file_type, media_type, media_id):
             item = { 'playlistid': playlistid }
             xbmc.Player.Open(item)
         elif server_type()=="PLEX":
-            plexlibrary.playfile (item,plexlibrary.getclients()[0]['host'])
+            plexlibrary.playfile (item,plexlibrary.getclients()[0]['host'],media_type)
     except:
         logger.log('CONTROLS :: Failed to open %s playlist' % file_type, 'DEBUG')
         return jsonify({ 'failed': True })
