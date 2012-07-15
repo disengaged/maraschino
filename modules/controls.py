@@ -16,18 +16,21 @@ xbmc_error = 'There was a problem connecting to the media server'
 @requires_auth
 def xhr_play_media(file_type, media_type, media_id):
     logger.log('CONTROLS :: Playing %s' % media_type, 'INFO')
-    xbmc = jsonrpclib.Server(server_api_address())
-
     if file_type == 'video':
         id = 1
     else:
         id = 0
-
+ 
     try:
         xhr_clear_playlist(id)
     except:
         logger.log('CONTROLS :: Failed to clear %s playlist' % file_type, 'DEBUG')
         return jsonify({ 'failed': True })
+
+    if server_type()=="XBMC":
+        xbmc = jsonrpclib.Server(server_api_address())
+    elif server_type()=="PLEX":
+        plexlibrary=PLEXLibrary(server_address())
 
     if file_type == 'video':
 
@@ -44,24 +47,29 @@ def xhr_play_media(file_type, media_type, media_id):
                 return jsonify({ 'failed': True })
 
         elif 'season' in media_type:
-            media_type = media_type.split('_')
-            season = int(media_type[1])
-
-            try:
-                tvshow_episodes = xbmc.VideoLibrary.GetEpisodes(tvshowid=media_id, season=season, sort={ 'method': 'episode' })['episodes']
-                for episode in tvshow_episodes:
-                    episodeid = episode['episodeid']
-                    item = { 'episodeid': episodeid }
-                    xbmc.Playlist.Add(playlistid=1, item=item)
-
-            except:
-                logger.log('CONTROLS :: Failed to retrieve episodes', 'DEBUG')
-                return jsonify({ 'failed': True })
-
+            if server_type()=="XBMC":
+                media_type = media_type.split('_')
+                season = int(media_type[1])
+    
+                try:
+                    tvshow_episodes = xbmc.VideoLibrary.GetEpisodes(tvshowid=media_id, season=season, sort={ 'method': 'episode' })['episodes']
+                    for episode in tvshow_episodes:
+                        episodeid = episode['episodeid']
+                        item = { 'episodeid': episodeid }
+                        xbmc.Playlist.Add(playlistid=1, item=item)
+    
+                except:
+                    logger.log('CONTROLS :: Failed to retrieve episodes', 'DEBUG')
+                    return jsonify({ 'failed': True })
+            elif server_type()=="PLEX":
+                pass    
         else:
             try:
-                item = { media_type + 'id': media_id }
-                xbmc.Playlist.Add(playlistid=1, item=item)
+                if server_type()=="XMBC":
+                    item = { media_type + 'id': media_id }
+                    xbmc.Playlist.Add(playlistid=1, item=item)
+                elif server_type()=="PLEX":
+                    item=str(media_id)
             except:
                 logger.log('CONTROLS :: Failed to add %s to playlist' % media_type, 'DEBUG')
                 return jsonify({ 'failed': True })
@@ -79,8 +87,11 @@ def xhr_play_media(file_type, media_type, media_id):
         playlistid = 0
 
     try:
-        item = { 'playlistid': playlistid }
-        xbmc.Player.Open(item)
+        if server_type()=="XBMC":
+            item = { 'playlistid': playlistid }
+            xbmc.Player.Open(item)
+        elif server_type()=="PLEX":
+            plexlibrary.playfile (item,plexlibrary.getclients()[0]['host'])
     except:
         logger.log('CONTROLS :: Failed to open %s playlist' % file_type, 'DEBUG')
         return jsonify({ 'failed': True })
@@ -299,16 +310,20 @@ def xhr_playlist_play(playerid, position):
 @app.route('/xhr/playlist/<int:playlistid>/clear')
 @requires_auth
 def xhr_clear_playlist(playlistid):
-    logger.log('CONTROLS :: Clearing playlist', 'INFO')
-    xbmc = jsonrpclib.Server(server_api_address())
-
-    try:
-        xbmc.Playlist.Clear(playlistid=playlistid)
+    if server_type()=="XBMC":
+        logger.log('CONTROLS :: Clearing playlist', 'INFO')
+        xbmc = jsonrpclib.Server(server_api_address())
+    
+        try:
+            xbmc.Playlist.Clear(playlistid=playlistid)
+            return jsonify({'success': True})
+    
+        except:
+            logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
+            return jsonify({'failed': True})
+    elif server_type()=="PLEX":
+        # no support for playlist yet
         return jsonify({'success': True})
-
-    except:
-        logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
-        return jsonify({'failed': True})
 
 @app.route('/xhr/playlist/<int:playlistid>/move_item/<int:position1>/<direction>')
 @requires_auth
