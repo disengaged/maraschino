@@ -105,7 +105,7 @@ class PLEXLibrary(object):
         return MusicItems
     
     def playfile (self,filetoplay,player):
-        url=self.server+"/library/sections/2/recentlyAdded"
+        url=self.server+"/library/sections/"+self.TVLibrary+"/recentlyAdded"
         key='/library/metadata/'+filetoplay
         f={'path': url, 'key': key}
         url=self.server+"/system/players/"+player+"/application/playMedia?"+urllib.urlencode(f)
