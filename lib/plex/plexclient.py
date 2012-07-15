@@ -4,7 +4,7 @@ Created on Jun 23, 2012
 @author: Anne Jan Elsinga
 '''
 __version__="0.1.1"
-
+import urllib
 import urllib2
 import time
 import xml.etree.ElementTree as ElementTree
@@ -72,14 +72,13 @@ class PLEXLibrary(object):
         getrecentlyaddedepisodes returns the recently added TV episodes from the library
         '''
         TVItems=[]
-        root = self.plexgetxml("/library/sections/"+self.TVLibrary+"/recentlyAdded")
+        url="/library/sections/"+self.TVLibrary+"/recentlyAdded"
+        root = self.plexgetxml(url)
         
         for node in root:
-            mediaelement=node.find ("Media/Part")
-            episodeid=[int(s) for s in mediaelement.get('key').split("/") if s.isdigit()][0]
             TVItems.append({'title':node.get('title'),'season':node.get('parentIndex'),'episode': node.get('index'),
                             'showtitle':node.get('grandparentTitle'),'playcount':node.get('viewCount'),
-                            'thumbnail':node.get('thumb'), 'episodeid':episodeid}) 
+                            'thumbnail':node.get('thumb'), 'episodeid':node.get('ratingKey')}) 
         return TVItems
         
     
@@ -104,6 +103,14 @@ class PLEXLibrary(object):
             MusicItems.append({'title':node.get('title'),'year':node.get('year'),'rating':node.get('rating'),
                                'artist':node.get('artist'),'thumbnail':node.get('thumb')})
         return MusicItems
+    
+    def playfile (self,filetoplay,player):
+        url=self.server+"/library/sections/2/recentlyAdded"
+        key='/library/metadata/'+filetoplay
+        f={'path': url, 'key': key}
+        url=self.server+"/system/players/"+player+"/application/playMedia?"+urllib.urlencode(f)
+        result=getHTMLbody(url)
+        return True
     
     def currently_playing(self):
         # read all clients, create array with currently playing
