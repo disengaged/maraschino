@@ -1,6 +1,8 @@
 $(document).ready(function() {
   // helper functions
   var settings_buttons = '<div class="module_settings"><span>Settings</span></div><div class="module_remove"><span>Remove</span></div>';
+  // where all polls will reside
+  var timeOuts = new Array([]);
 
   function construct_inactive_module(name, title) {
     return '<div id="' + name + '_inactive" class="inactive_module" data-module="' + name + '">' + settings_buttons + '<h2>' + title + '</h2></div></div>';
@@ -51,10 +53,6 @@ $(document).ready(function() {
     var popup = $('<div id="popup_message" class="dialog"><div class="close">x</div><p>' + message + '</p><div class="choices"><div class="cancel">OK</div></div></div>');
     $('body').append(popup);
     popup.showPopup({ dispose: true });
-    $(document).on('keydown', 'body', function() {
-      $('#popup_message .choices .cancel').click();
-      $(document).off('keydown', 'body');
-    });
   }
 
   // get/poll module
@@ -107,8 +105,8 @@ $(document).ready(function() {
     if (settings.poll !== 0) {
       var timer = module+'_timer';
       if(timer){
-        clearTimeout(window[timer]);
-        window[timer] = setTimeout(function() {
+        clearTimeout(timeOuts[timer]);
+        timeOuts[timer] = setTimeout(function() {
           get_module(module, {
             poll: settings.poll,
             params: [settings.params]
@@ -146,7 +144,7 @@ $(document).ready(function() {
 
   var currently_playing_id = null;
 
-  function get_currently_playing() {
+  function get_currently_playing(visibility) {
     $.get(WEBROOT + '/xhr/currently_playing', function(data) {
       var module;
       if (data.playing === false) {
@@ -180,6 +178,9 @@ $(document).ready(function() {
           $('#currently_playing').slideDown(200);
         }
 
+        if(visibility) {
+          $('#currently_playing').attr('class', visibility);
+        }
         // use fanart of currently playing item as background if enabled in settings
 
         if ($('body').data('fanart_backgrounds') === 'True') {
@@ -241,12 +242,18 @@ $(document).ready(function() {
             placeholder: $('#trakt_inactive')
           });
         }
-
         currently_playing_id = $(data).data('id');
       }
     });
-
-    setTimeout(get_currently_playing, 5000);
+    if (visibility) {
+      timeOuts['currently_playing'] = setTimeout(function() {
+        get_currently_playing(visibility);
+      }, 5000);
+    } else {
+      timeOuts['currently_playing'] = setTimeout(function() {
+        get_currently_playing();
+      }, 5000);
+    }
   }
 
   // Currently playing playlist
@@ -263,13 +270,8 @@ $(document).ready(function() {
     e.stopPropagation();
   });
 
-  $(document).on('click', '#playlist_dialog .clear', function() {
-    $.get(WEBROOT + '/xhr/playlist/' + $(this).data('command'));
-    $('#playlist_dialog .close').click();
-  });
-
   $(document).on('click', '#playlist_dialog .control', function() {
-    $.get(WEBROOT + '/xhr/playlist/' + $(this).data('command'));
+    $.get(WEBROOT + $(this).data('command'));
     $.get(WEBROOT + '/xhr/currently_playing/playlist', function(data){
       $('#playlist_dialog .close').click();
       var popup = $(data);
@@ -297,9 +299,18 @@ $(document).ready(function() {
   $(document).on('click', '#currently_playing .progress', function(e){
     var x = e.pageX - $(this).offset().left;
     var percent = Math.round((x / $(this).width())*100);
+    var minimized = false;
+    if($('#currently_playing').hasClass('minimize')){
+      minimized = true;
+    }
     $.get(WEBROOT + '/xhr/controls/seek_'+percent);
     $.get(WEBROOT + '/xhr/currently_playing', function(data){
       $('#currently_playing').replaceWith(data);
+      if(minimized){
+        $('#currently_playing').attr('class', 'minimize');
+      } else {
+        $('#currently_playing').attr('class', 'maximize');
+      }
     });
   });
 
@@ -368,6 +379,10 @@ $(document).ready(function() {
 
   $(document).on('click', '#currently_playing .controls > div', function() {
     var command = $(this).data('command');
+    var minimized = false;
+    if($('#currently_playing').hasClass('minimize')){
+      minimized = true;
+    }
     $.get(WEBROOT + '/xhr/controls/' + command);
     $.get(WEBROOT + '/xhr/currently_playing', function(data) {
       if (data.playing === false) {
@@ -376,6 +391,11 @@ $(document).ready(function() {
         });
       } else {
         $('#currently_playing').replaceWith(data);
+      }
+      if(minimized) {
+        $('#currently_playing').attr('class', 'minimize');
+      } else {
+        $('#currently_playing').attr('class', 'maximize');
       }
     });
   });
@@ -388,40 +408,10 @@ $(document).ready(function() {
     });
   });
 
-  // click show name to view in media library module
+  // invoke XBMC library
 
-  $(document).on('click', '#currently_playing .item_info_show .show', function() {
-    invoke_library(WEBROOT + '/xhr/library/shows/' + $(this).data('show'));
-  });
-
-  // click show season to view in media library module
-
-  $(document).on('click', '#currently_playing .item_info_show .season', function() {
-    invoke_library(WEBROOT + '/xhr/library/shows/' + $(this).parent().find('.show').data('show') + '/' + $(this).data('season'));
-  });
-
-  // click episode to view in media library module
-
-  $(document).on('click', '#currently_playing .item_info_show .episode', function() {
-    invoke_library(WEBROOT + '/xhr/library/episode/info/' + $(this).data('episode'));
-  });
-
-  // click movie to view in media library module
-
-  $(document).on('click', '#currently_playing .item_info_movie .movie', function() {
-    invoke_library(WEBROOT + '/xhr/library/movie/info/' + $(this).data('movie'));
-  });
-
-  // click artist name to view in media library module
-
-  $(document).on('click', '#currently_playing .item_info_artist .artist', function() {
-    invoke_library(WEBROOT + '/xhr/library/artists/' + $(this).data('artist'));
-  });
-
-  // click show album to view in media library module
-
-  $(document).on('click', '#currently_playing .item_info_artist .album', function() {
-    invoke_library(WEBROOT + '/xhr/library/artists/' + $(this).parent().find('.artist').data('artist') + '/' + $(this).data('album'));
+  $(document).on('click', '.invoke_library', function() {
+    invoke_library(WEBROOT + '/xhr/library' + $(this).data('path'));
   });
 
   function invoke_library(url) {
@@ -435,18 +425,40 @@ $(document).ready(function() {
     });
   }
 
-  // Filter function
+  // currently playing close
+  $(document).on('click', '#currently_playing .visibility .close', function() {
+    $('#currently_playing').slideUp(200, function() {
+      $(this).remove();
+      clearTimeout(timeOuts['currently_playing']);
+    });
+  });
 
+  // currently playing minimize
+  $(document).on('click', '#currently_playing .visibility .minimize', function() {
+    if ($('#currently_playing').hasClass('minimize')) {
+      $('#currently_playing').attr('class', 'maximize');
+    } else {
+      $('#currently_playing').attr('class', 'minimize');
+    }
+    clearTimeout(timeOuts['currently_playing']);
+    if($('#currently_playing').hasClass('minimize')){
+      get_currently_playing('minimize');
+    } else {
+      get_currently_playing('maximize');
+    }
+  });
+
+  // Filter function
   $(document).on('change keydown keyup search', '#library .filter', function(e){
     var filter = $(this).val().toLowerCase();
-    $('#library ul li').filter(function(index) {
-      return $(this).text().toLowerCase().indexOf(filter) < 0;
+    $('#library .media').filter(function(index) {
+      return $(this).attr('filter').toLowerCase().indexOf(filter) < 0;
     }).css('display', 'none');
-    $('#library ul li').filter(function(index) {
-      return $(this).text().toLowerCase().indexOf(filter) >= 0;
+    $('#library .media').filter(function(index) {
+      return $(this).attr('filter').toLowerCase().indexOf(filter) >= 0;
     }).css('display', '');
     if(e.which == 13){
-      $('#library ul li:visible:first').click();
+      $('#library .media:visible:first').click();
     }
   });
 
@@ -459,49 +471,41 @@ $(document).ready(function() {
 
 
   // update video library control
-
   $(document).on('click', '#library #video-update', function() {
     $.get(WEBROOT + '/xhr/controls/update_video');
   });
 
   // clean video library control
-
   $(document).on('click', '#library #video-clean', function() {
     $.get(WEBROOT + '/xhr/controls/clean_video');
   });
 
   // update music library control
-
   $(document).on('click', '#library #audio-update', function() {
     $.get(WEBROOT + '/xhr/controls/update_audio');
   });
 
   // clean music library control
-
   $(document).on('click', '#library #audio-clean', function() {
     $.get(WEBROOT + '/xhr/controls/clean_audio');
   });
 
-  // media player poweron
-
+  // xbmc poweron
   $(document).on('click', '#library #poweron', function() {
     $.get(WEBROOT + '/xhr/controls/poweron');
   });
 
-  // media player poweroff
-
+  // xbmc poweroff
   $(document).on('click', '#library #poweroff', function() {
     $.get(WEBROOT + '/xhr/controls/poweroff');
   });
 
-  // media player reboot
-
+  // xbmc reboot
   $(document).on('click', '#library #reboot', function() {
     $.get(WEBROOT + '/xhr/controls/reboot');
   });
 
-  // media player suspend
-
+  // xbmc suspend
   $(document).on('click', '#library #suspend', function() {
     $.get(WEBROOT + '/xhr/controls/suspend');
   });
@@ -620,217 +624,208 @@ $(document).ready(function() {
 
   // play recently added episodes when clicking on them
 
-  $(document).on('click', '#recently_added #play_episode', function() {
+  $(document).on('click', '#recently_added .play_episode', function() {
     $.get(WEBROOT + '/xhr/play/video/episode/' + $(this).data('episodeid'));
-  });
-
-  // show info for recently added episode in library
-
-  $(document).on('click', '#recently_added #info_episode', function() {
-    invoke_library(WEBROOT + '/xhr/library/episode/info/' + $(this).data('episodeid'));
   });
 
   // play recently added movies when clicking on them
 
-  $(document).on('click', '#recently_added_movies #play_movie', function() {
+  $(document).on('click', '#recently_added_movies .play_movie', function() {
     $.get(WEBROOT + '/xhr/play/video/movie/' + $(this).data('movieid'));
-  });
-
-  // show info for recently added movie in library
-
-  $(document).on('click', '#recently_added_movies #info_movie', function() {
-    invoke_library(WEBROOT + '/xhr/library/movie/info/' + $(this).data('movieid'));
   });
 
   // play recently added albums when clicking on them
 
-  $(document).on('click', '#recently_added_albums #play_album', function() {
+  $(document).on('click', '#recently_added_albums .play_album', function() {
     $.get(WEBROOT + '/xhr/play/audio/album/' + $(this).data('albumid'));
   });
 
-  // show info for recently added album in library
+  /*** XBMC LIBRARY ***/
 
-  $(document).on('click', '#recently_added_albums #info_album', function() {
-    invoke_library(WEBROOT + '/xhr/library/album/info/' + $(this).data('albumid'));
-  });
+  // show xhrloading
+  function show_library_loading() {
+    $('#library .back').hide();
+    $('#library .xhrloading').show();
+  }
+
+  // hide xhrloading
+  function hide_library_loading() {
+    $('#library .xhrloading').hide();
+    $('#library .back').show();
+  }
 
   // browse library
+  $(document).on('click', '#library .get', function() {
+    var url = $(this).data('url');
+    url = WEBROOT + '/xhr/library' + url;
 
-  $(document).on('click', '#library li.get', function() {
-    var url = WEBROOT + '/xhr/library';
-    var commands = $(this).data('command').split('/');
-
-    for (var i=0; i < commands.length; i++) {
-      url += '/' + commands[i];
-    }
-
-    add_loading_gif(this);
+    show_library_loading();
 
     $.get(url, function(data) {
       $('#library').replaceWith(data);
+      var x = window.scrollX, y = window.scrollY;
+      $('#library #filter input').focus();
+      window.scrollTo(x, y);
     });
   });
 
-  $(document).on('click', '#library #play', function() {
-    var li;
-    if ($(this).hasClass('li_buttons')) {
-      li = $(this).parent().parent();
-    }
-    else {
-      li = this;
-    }
+  // play button
+  $(document).on('click', '#library .play', function() {
+    show_library_loading();
 
-    var file_type = $(li).attr('file-type');
-    var media_type = $(li).attr('media-type');
-    var id = $(li).data('id');
-    add_loading_gif(li);
-
-    $.get(WEBROOT + '/xhr/play/' + file_type + '/' + media_type + '/' + id, function() {
-      remove_loading_gif(li);
+    $.get(WEBROOT + $(this).closest('.media').data('xhr_play'), function() {
+      hide_library_loading();
     });
   });
 
-  $(document).on('click', '#library #queue', function() {
-    var li;
-    if ($(this).hasClass('li_buttons')) {
-      li = $(this).parent().parent();
-    }
-    else {
-      li = this;
-    }
+  // queue button
+  $(document).on('click', '#library .queue', function() {
+    show_library_loading();
 
-    var file_type = $(li).attr('file-type');
-    var media_type = $(li).attr('media-type');
-    var id = $(li).data('id');
-    add_loading_gif(li);
-
-    $.get(WEBROOT + '/xhr/enqueue/' + file_type + '/' + media_type + '/' + id, function() {
-      remove_loading_gif(li);
+    $.get(WEBROOT + $(this).closest('.media').data('xhr_queue'), function() {
+      hide_library_loading();
     });
   });
 
-  $(document).on('click', '#library #info', function() {
-    var li;
-    if ($(this).hasClass('li_buttons')) {
-      li = $(this).parent().parent();
-    }
-    else {
-      li = this;
-    }
+  // play file button
+  $(document).on('click', '#library .play_file', function() {
+    var file = $(this).closest('.media').data('path');
 
-    var id = $(li).data('id');
-    var media_type = $(li).attr('media-type');
-    add_loading_gif(li);
+    show_library_loading();
+    $.post(WEBROOT + $(this).closest('.media').data('xhr_play'),{file: encodeURI(file)}, function(data){
+      hide_library_loading();
+    });
+  });
 
-    $.get(WEBROOT + '/xhr/library/' + media_type + '/info/' + id, function(data) {
+  // queue file button
+  $(document).on('click', '#library .queue_file', function() {
+    var file = $(this).closest('.media').data('path');
+
+    show_library_loading();
+    $.post(WEBROOT + $(this).closest('.media').data('xhr_queue'),{file: encodeURI(file)}, function(data){
+      hide_library_loading();
+    });
+  });
+
+  // info button
+  $(document).on('click', '#library .info', function() {
+    show_library_loading();
+
+    $.get(WEBROOT + $(this).closest('.media').data('xhr_info'), function(data) {
       $('#library').replaceWith(data);
     });
   });
 
-  $(document).on('click', '#library #trailer', function() {
-    $.get(WEBROOT + '/xhr/play/trailer/' + $(this).data('id'));
-  });
+  //Check for resume position when clicking video
+  $(document).on('click', '#library .resume_check', function() {
+    var xhr_play = $(this).closest('.media').data('xhr_play');
 
-  $(document).on('click', '#library #resume', function() {
-    var li;
-    if ($(this).hasClass('li_buttons')) {
-      li = $(this).parent().parent();
-    }
-    else {
-      li = this;
-    }
+    show_library_loading();
 
-    var media_type = $(li).attr('media-type');
-    var id = $(li).data('id');
-    add_loading_gif(li);
-
-    $.get(WEBROOT + '/xhr/resume/video/' + media_type + '/' + id, function() {
-      remove_loading_gif(li);
+    $.get(WEBROOT + $(this).closest('.media').data('xhr_resume_check'), function(data) {
+      hide_library_loading();
+      if (data.resume) {
+        var popup = $(data.template);
+        $('body').append(popup);
+        popup.showPopup({ dispose: true });
+      }
+      else {
+        $.get(WEBROOT+xhr_play);
+      }
     });
   });
 
-  $(document).on('click', '#library li.dir', function() {
-    var path = $(this).data('path');
-
-    add_loading_gif(this);
-    $.post(WEBROOT + '/xhr/library/files/' + $(this).data('file_type') + '/dir/',{path: encodeURI(path)}, function(data){
-      $('#library').replaceWith(data);
+  // Play/Resume from dialog
+  $(document).on('click', '#resume_dialog .action', function() {
+    $.get(WEBROOT + $(this).data('url'), function() {
+      $('#resume_dialog .close').click();
     });
   });
 
-  $(document).on('click', '#library li.play_file', function() {
-    var li = this;
-    var file = $(this).data('path');
+  // Play trailer
+  $(document).on('click', '#library .trailer', function() {
+    show_library_loading();
 
-    add_loading_gif(li);
-    $.post(WEBROOT + '/xhr/play_file/' + $(this).data('file_type') + '/',{file: encodeURI(file)}, function(data){
-      remove_loading_gif(li);
+    $.get(WEBROOT + $(this).closest('.media').data('xhr_trailer'), function() {
+      hide_library_loading();
     });
   });
 
-  $(document).on('click', '#library #queue_file', function() {
-    var li = this;
-    var file = $(this).data('path');
+  // Resume
+  $(document).on('click', '#library .resume', function() {
+    show_library_loading();
 
-    add_loading_gif(li);
-    $.post(WEBROOT + '/xhr/enqueue_file/' + $(this).data('file_type') + '/',{file: encodeURI(file)}, function(data){
-      remove_loading_gif(li);
+    $.get(WEBROOT + $(this).closest('.media').data('xhr_resume'), function() {
+      hide_library_loading();
     });
   });
 
-  $(document).on('click', '#library .li_buttons', function(e) {
+  // PVR scan
+  $(document).on('click', '#library #pvr-scan', function() {
+    show_library_loading();
+    $.get(WEBROOT + '/xhr/controls/pvr-scan', function(data){
+      hide_library_loading();
+    });
+  });
+
+  // control buttons
+  $(document).on('click', '#library .list_buttons .button, #library .banner_button, #library .poster_button', function(e) {
     e.stopPropagation();
   });
 
-  $(document).on('mouseenter', '#library li', function() {
+  $(document).on('mouseenter', '#library ul.list_view li', function() {
     $('.watched', this).hide();
-    $('.li_buttons', this).show();
+    $('.list_buttons .button', this).show();
   });
 
-  $(document).on('mouseleave', '#library li', function() {
-    $('.li_buttons', this).hide();
+  $(document).on('mouseleave', '#library ul.list_view li', function() {
+    $('.list_buttons .button', this).hide();
     $('.watched', this).show();
   });
 
-  $(document).on('click', '#library #back', function() {
-    var url = WEBROOT + '/xhr/library';
-    var command = $('#library li:first-child').eq(0).data('command');
+  $(document).on('mouseenter', '#library .poster_view #poster', function() {
+    $('.poster_buttons', this).show();
+  });
 
-    if (command) {
-      var commands = command.split('/');
-      commands.pop();
-      commands.pop();
+  $(document).on('mouseleave', '#library .poster_view #poster', function() {
+    $('.poster_buttons', this).hide();
+  });
 
-      for (var i=0; i < commands.length; i++) {
-        url += '/' + commands[i];
+  // Save media settings
+  $(document).on('click', '#library #settings .choices .save', function() {
+    var settings = $('#library #settings').find('form').serializeArray();
+    var media = $('#library #content').data('media');
+    var url = $('#library #content').data('url');
+    url = WEBROOT + '/xhr/library' + url;
+    button = $(this);
+
+    show_library_loading();
+
+    $.post(
+      WEBROOT + '/xhr/library/save/'+media+'/',
+      {settings: JSON.stringify(settings)},
+      function(data) {
+        if (data.success) {
+          $.get(url, function(data) {
+            $('#library').replaceWith(data);
+            toggle_settings_mode();
+          });
+        }
+        else {
+          popup_message('Failed to save '+media+' settings');
+          hide_library_loading();
+        }
       }
-    }
-
-    $(this).addClass('xhrloading');
-
-    $.get(url, function(data) {
-      $('#library').replaceWith(data);
-    });
-  });
-
-  $(document).on('click', '#library #back_dir', function() {
-    var path = $(this).data('back');
-
-    $(this).addClass('xhrloading');
-    $.post(WEBROOT + '/xhr/library/files/' + $(this).data('file_type') + '/dir/',{path: encodeURI(path)}, function(data){
-    $('#library').replaceWith(data);
-    });
-  });
-
-  $(document).on('click', '#library #back_sources', function() {
-    $(this).addClass('xhrloading');
-    $.get(WEBROOT + '/xhr/library/files/' + $(this).data('file_type'), function(data) {
-    $('#library').replaceWith(data);
-    });
+    );
   });
 
 
   /*** SICKBEARD ***/
+
+  // Loading wheel on menu click
+  $(document).on('click', '#sickbeard .menu li', function() {
+    $(this).children().css('background', 'url('+WEBROOT+'/static/images/xhrloading.gif) no-repeat center').html('&nbsp;');
+  });
 
   // Search Episode Functionality on Magnifying Glass png
 
@@ -841,14 +836,14 @@ $(document).ready(function() {
     var id = $(this).attr('id');
     $.get(WEBROOT + '/sickbeard/search_ep/'+id+'/'+season+'/'+ep)
     .success(function(data){
-      if(data){
+      if(data.result === 'success'){
         $('#sickbeard #'+id+'_'+season+'_'+ep+' div.options img.search').attr('src', WEBROOT + '/static/images/yes.png');
       } else {
         $('#sickbeard #'+id+'_'+season+'_'+ep+' div.options img.search').attr('src', WEBROOT + '/static/images/no.png');
       }
     })
     .error(function(){
-      popup_message('Could not reach Sick-Beard.');
+      popup_message('Could not reach SickBeard.');
     });
   });
 
@@ -918,6 +913,7 @@ $(document).ready(function() {
   $(document).on('click', '#sickbeard .menu li.snatched', function(){
     $('#sickbeard .history .Snatched').toggle();
     $(this).toggleClass('active');
+    $(this).children().css('background', 'url('+WEBROOT+'/static/images/snatched.png) no-repeat center').html('Snatched');
   });
 
   // Show Menu
@@ -980,19 +976,18 @@ $(document).ready(function() {
   // Show Banner manager display
 
   $(document).on('click', '#sickbeard #show .banner .options' , function(){
-    $('#sickbeard #show .banner .manage').show();
+    if($(this).hasClass('open')){  // closing
+      $('#sickbeard #show .banner').transition({ y: '0px' });
+    } else { // opening
+      $('#sickbeard #show .banner').transition({ y: '-40px' });
+    }
+    $(this).toggleClass('open');
   });
 
-  // Hide Banner manager display
+  // Delete show function
 
-  $(document).on('click', '#sickbeard #show .banner .manage .close' , function(){
-    $('#sickbeard #show .banner .manage').hide();
-  });
-
-  //Delete show function
-
-  $(document).on('click', '#sickbeard #show .banner .manage .delete' , function(){
-    var id = $('#sickbeard #show .banner .manage').attr('tvdbid');
+  $(document).on('click', '#sickbeard #show .manage .delete' , function(){
+    var id = $('#sickbeard #show .manage').attr('tvdbid');
     $.get(WEBROOT + '/sickbeard/delete_show/'+id)
     .success(function(data){
       popup_message(data);
@@ -1002,10 +997,10 @@ $(document).ready(function() {
     });
   });
 
-  //Refresh show function
+  // Refresh show function
 
-  $(document).on('click', '#sickbeard #show .banner .manage .refresh' , function(){
-    var id = $('#sickbeard #show .banner .manage').attr('tvdbid');
+  $(document).on('click', '#sickbeard #show .manage .refresh' , function(){
+    var id = $('#sickbeard #show .manage').attr('tvdbid');
     $.get(WEBROOT + '/sickbeard/refresh_show/'+id)
     .success(function(data){
       popup_message(data);
@@ -1015,10 +1010,10 @@ $(document).ready(function() {
     });
   });
 
-  //Update show function
+  // Update show function
 
-  $(document).on('click', '#sickbeard #show .banner .manage .update' , function(){
-    var id = $('#sickbeard #show .banner .manage').attr('tvdbid');
+  $(document).on('click', '#sickbeard #show .manage .update' , function(){
+    var id = $('#sickbeard #show .manage').attr('tvdbid');
     $.get(WEBROOT + '/sickbeard/update_show/'+id)
     .success(function(data){
       popup_message(data);
@@ -1083,22 +1078,14 @@ $(document).ready(function() {
 
   // Load search results
 
-  $(document).on('keypress', '#sickbeard #sb_search #value', function(e){
+  $(document).on('keypress', '#sickbeard .powerholder input', function(e){
     if(e.which == 13){
       e.preventDefault();
-      var name = $('#sickbeard #sb_search #value').attr('value');
-      var type = $('#sickbeard #sb_search #tvdbid').attr('value');
-      var lang = $('#sickbeard #sb_search #lang').attr('value');
+      add_loading_gif($('#sickbeard .powerholder .loading'));
+      var name = $(this).attr('value');
       params = '';
       if(name !== ''){
-        if(type == 'name'){
-          params = 'name='+name;
-        } else {
-          params = 'tvdbid='+name;
-        }
-        if(lang !== ''){
-          params = params + '&lang='+lang;
-        }
+        params = 'name='+name;
       }
       $.get(WEBROOT + '/sickbeard/search/?'+params)
       .success(function(data){
@@ -1112,7 +1099,7 @@ $(document).ready(function() {
 
   // Add show function
 
-  $(document).on('click', '#sickbeard #sb_search #result tr', function(){
+  $(document).on('click', '#sickbeard #sb_search #result li', function(){
     $.get(WEBROOT + '/sickbeard/add_show/'+$(this).attr('tvdbid'))
     .success(function(data){
       popup_message(data);
@@ -1138,7 +1125,7 @@ $(document).ready(function() {
       }
     })
     .error(function(){
-      popup_message('There was a problem with Sick-Beard.');
+      popup_message('There was a problem with SickBeard.');
     });
   });
 
@@ -1156,7 +1143,7 @@ $(document).ready(function() {
       }
     })
     .error(function(){
-      popup_message('There was a problem with Sick-Beard.');
+      popup_message('There was a problem with SickBeard.');
     });
   });
 
@@ -1297,9 +1284,65 @@ $(document).ready(function() {
     });
   });
 
+
+  $(document).on('mouseenter', '#sabnzbd .status img', function(){
+    $('#sabnzbd .pause_list').show();
+    });
+
+  $(document).on('mouseleave', '#sabnzbd .status', function(){
+    $('#sabnzbd .pause_list').hide();
+    });
+
+  $(document).on('click', '#sabnzbd .status .pause_time', function(e){
+    e.stopPropagation();
+    var time = $(this).data('time');
+    $.get(WEBROOT + '/xhr/sabnzbd/queue/pause/'+time)
+    .success(function(data){
+      $('#sabnzbd .pause_list').hide();
+      if(data.status == 'true'){
+        get_module('sabnzbd', { poll:10, params: [ 'show' ] });
+      }
+    })
+    .error(function(){
+      popup_message('Problem reaching Maraschino on /xhr/sabnzbd/queue/pause/'+time);
+    });
+  });
+
+  $(document).on('click', '#sabnzbd .status .pause_for', function(){
+    $.get(WEBROOT + '/xhr/sabnzbd/custom_pause/', function(data) {
+      var popup = $(data);
+      $('body').append(popup);
+      popup.showPopup({ dispose: true });
+    });
+  });
+
+  $(document).on('click', '#sabnzbd_pause_dialog .save_pause', function(){
+    var time = $('#sabnzbd_pause_dialog input').val();
+    if (time) {
+      $('#sabnzbd_pause_dialog .close').click();
+
+      $.get(WEBROOT + '/xhr/sabnzbd/queue/pause/'+time)
+      .success(function(data){
+        $('#sabnzbd .pause_list').hide();
+        if(data.status == 'true'){
+          get_module('sabnzbd', { poll:10, params: [ 'show' ] });
+        }
+      })
+      .error(function(){
+        popup_message('Problem reaching Maraschino on /xhr/sabnzbd/queue/pause/'+time);
+      });
+    }
+  });
+
   /********* END SABNZBD ***********/
 
   /********* CouchPotato **********/
+
+  // Loading wheel on menu click
+  $(document).on('click', '#couchpotato .menu li', function() {
+    $(this).children().css('background', 'url('+WEBROOT+'/static/images/xhrloading.gif) no-repeat center').html('&nbsp;');
+  });
+
   // menu wanted click
   $(document).on('click', '#couchpotato .menu .wanted', function(){
     $.get(WEBROOT + '/xhr/couchpotato/')
@@ -1316,37 +1359,24 @@ $(document).ready(function() {
     });
   });
 
-  // menu settings click
-  $(document).on('click', '#couchpotato .menu .settings', function(){
-    $.get(WEBROOT + '/xhr/couchpotato/settings/')
+  // menu history click
+  $(document).on('click', '#couchpotato .menu .history', function(){
+    $.get(WEBROOT + '/xhr/couchpotato/history/')
     .success(function(data){
       $('#couchpotato').replaceWith(data);
+      $('#couchpotato .menu').prepend('<li class="mark_read" title="Mark all notifications as read"><span>Mark All as Read</span></li>');
     });
   });
-
-  // Load search template
-  $(document).on('click', '#couchpotato .menu .add', function(){
-    $.get(WEBROOT + '/xhr/couchpotato/search/')
-    .success(function(data){
-      $('#couchpotato').replaceWith(data);
-    })
-    .error(function(){
-      popup_message('Could not reach Maraschino.');
-    });
-  });
-  
   // Load search results
   // on enter
-  $(document).on('keypress', '#couchpotato .search .value', function(e){
+  $(document).on('keydown', '#couchpotato .search_div input', function(e) {
     if(e.which == 13){
-      e.preventDefault();
-      var name = $('#couchpotato .search .value').attr('value');
+      var name = $(this).attr('value');
       params = '';
       if(name !== ''){
           params = 'name='+encodeURIComponent(name);
       }
-      $('#couchpotato .search span.search').text('');
-      add_loading_gif($('#couchpotato .search span.search'));
+      add_loading_gif($('#couchpotato .search_div .loading'));
       $.get(WEBROOT + '/xhr/couchpotato/search/?'+params)
       .success(function(data){
         $('#couchpotato').replaceWith(data);
@@ -1355,24 +1385,6 @@ $(document).ready(function() {
         popup_message('Could not reach Maraschino.');
       });
     }
-  });
-  // Load search results
-  // on button click
-  $(document).on('click', '#couchpotato .search span.search', function() {
-    var name = $('#couchpotato .search .value').attr('value');
-    params = '';
-    if(name !== ''){
-        params = 'name='+encodeURIComponent(name);
-    }
-    $(this).text('');
-    add_loading_gif($(this));
-    $.get(WEBROOT + '/xhr/couchpotato/search/?'+params)
-    .success(function(data){
-      $('#couchpotato').replaceWith(data);
-    })
-    .error(function(){
-      popup_message('Could not reach Maraschino.');
-    });
   });
   // Search add movie click
   $(document).on('click', '#couchpotato .search ul li .choices .add', function() {
@@ -1394,14 +1406,51 @@ $(document).ready(function() {
     var el = $('#'+id);
     el.toggleClass('selected');
     if(el.hasClass('selected')){
-      el.transition({x: '30px', opacity: 0.7}, function(){
-        $('#couchpotato #cp_content .options&.'+id).transition({opacity: 1});
-      });
+      if ($(this).parent().hasClass('releases')) {
+        var x_move = $('#couchpotato').width() - ($(this).width() * 1.55);
+        var ul_width = x_move - 40;
+        x_move = x_move + 'px';
+        ul_width = ul_width + 'px';
+        $('#couchpotato .release_list').css('width', ul_width);
+
+        el.transition({x: x_move, opacity: 0.7}, function(){
+          $('#couchpotato #cp_content .options&.'+id).transition({opacity: 1});
+        });
+      }
+      else {
+        el.transition({x: '30px', opacity: 0.7}, function(){
+          $('#couchpotato #cp_content .options&.'+id).transition({opacity: 1});
+        });
+      }
     } else {
       $('#couchpotato #cp_content .options&.'+id).transition({opacity: 0}, function(){
         el.transition({opacity: 1, x: '0px'});
       });
     }
+  });
+  // release action (download, remove, ignore)
+  $(document).on('click', '#couchpotato .release_list .release_btn', function() {
+    var id = $(this).parent().data('id');
+    var el = $(this);
+    var action = el.data('action');
+    el.attr('src', WEBROOT + '/static/images/xhrloading.gif');
+
+    $.get(WEBROOT+'/xhr/couchpotato/release/'+action+'/'+id, function(data) {
+      if(data.success) {
+        if(action === 'delete') {
+          el.parent().transition({opacity: 0, duration: 1000}, function(){
+            el.parent().remove();
+          });
+        } else {
+          popup_message('Successfully sent download request');
+          $.get(WEBROOT+'/xhr/couchpotato/', function(data) {
+            $('#couchpotato').replaceWith(data);
+          });
+        }
+      } else {
+        popup_message('Failed to '+action+' release, see log for more datials');
+      }
+    });
   });
   // wanted delete, info delete
   $(document).on('click', '#couchpotato #cp_content .options img.delete, #couchpotato #info .options img.delete', function(selector) {
@@ -1518,8 +1567,33 @@ $(document).ready(function() {
     $.get(WEBROOT + '/xhr/couchpotato/log/' + $(this).find(':selected').val() + '/30/', function(data) {
       $('#couchpotato').replaceWith(data);
     });
-    
   });
+  // notification read click
+  $(document).on('click', '#couchpotato #history ul li.new', function() {
+    var el = $(this);
+    $.get(WEBROOT + '/xhr/couchpotato/notification/read/' + $(this).data('id'), function(data) {
+        if(data.success){
+            el.removeClass('new');
+            $('#unread').text($('#unread').text()-1);
+        } else {
+            popup_message('Failed to mark notification as read, check logs for details');
+        }
+    });
+  });
+
+  // notification read click
+  $(document).on('click', '#couchpotato .menu .mark_read', function(e) {
+    var el = $(this);
+    $.get(WEBROOT + '/xhr/couchpotato/notification/read/', function(data) {
+        if(data.success){
+            $('#unread').text('0');
+            el.hide();
+        } else {
+            popup_message('Failed to mark notifications as read, check logs for details');
+        }
+    });
+  });
+
   /********* END CouchPotato ***********/
 
   /********* SEARCH ***********/
@@ -1566,16 +1640,23 @@ $(document).ready(function() {
       var query = $('#search form #value').val();
       var site = $('#search form #site').val();
       var cat = $('#search form #category').val();
+      var maxage = $('#search form #maxage').val();
+
       if(site === ''){
         popup_message('You must pick a website');
         return false;
       }
-      if(query === ''){
-        popup_message('Must search something!');
-        return false;
+      if(!maxage) {
+        maxage = '0';
       }
+
+      var url = '/search/'+site+'/'+cat+'/'+maxage+'/';
+      if(query !== ''){
+        url = url + query;
+      }
+
       $('#search .searching').show();
-      $.get(WEBROOT + '/search/'+site+'/'+query+'/'+cat, function(data){
+      $.get(WEBROOT + url, function(data){
         $('#search .searching').hide();
         if(data['error']){
           popup_message(data['error']);
@@ -1583,6 +1664,7 @@ $(document).ready(function() {
         } else {
           $('#search').replaceWith(data);
           byteSizeOrdering();
+          $('#search form #value').val(query);
           $('#search #results .tablesorter').tablesorter({headers: { 2: { sorter: 'filesize'}}});
         }
       });
@@ -1592,6 +1674,9 @@ $(document).ready(function() {
   $(document).on('change', '#search form #site', function(){
     var value = $(this).val();
     var query = $('#search form #value').val();
+    $('#search form #category').remove();
+    $('#search .searching').show();
+
     $.get(WEBROOT + '/xhr/search/'+value)
     .success( function(data){
       $('#search').replaceWith(data);
@@ -1601,7 +1686,7 @@ $(document).ready(function() {
 
   $(document).on('click', '#search #results table tbody tr td:first-child img', function(){
     var link = $(this).attr('nzb-link');
-    $.post(WEBROOT + '/sabnzbd/add/',{url: encodeURI(link)}, function(data){
+    $.post(WEBROOT + '/sabnzbd/add/',{url: link}, function(data){
       data = eval('(' + data + ')');
       if(data['status']){
         popup_message('Successfully added to SabNZBd');
@@ -1613,6 +1698,48 @@ $(document).ready(function() {
 
   $(document).on('click', '#search #close', function() {
     $(search).slideUp(300);
+  });
+
+  $(document).on('click', '#add_newznab', function() {
+    var url = WEBROOT + '/search/newznab_dialog';
+    if ($(this).hasClass('edit')){
+      url = url + '/' + $(this).data('id');
+    }
+
+    $('#search_settings_dialog .save').click();
+    $.get(url, function(data) {
+      var popup = $(data);
+      $('body').append(popup);
+      popup.showPopup({ dispose: true });
+    });
+  });
+
+  $(document).on('click', '#add_edit_newznab_dialog .choices .save', function() {
+    var form = $('#add_edit_newznab_dialog form');
+
+    if (!validate_form(form)) {
+      return false;
+    }
+
+    var settings = form.serialize();
+    $.post(WEBROOT + '/search/add_edit_newznab/', settings, function(data) {
+      if (!data.error) {
+        $('#add_edit_newznab_dialog .close').click();
+        $('#search_settings').click();
+        $('#search').replaceWith(data);
+      }
+    });
+  });
+
+  $(document).on('click', '#add_edit_newznab_dialog .choices .delete', function() {
+    var newznab_id = $('#add_edit_newznab_dialog input[name=newznab_id]').val();
+    $.get(WEBROOT + '/search/delete_newznab/' + newznab_id, function(data) {
+      if (!data.status) {
+        $('#search').replaceWith(data);
+        $('#add_edit_newznab_dialog .close').click();
+        $('#search_settings').click();
+      }
+    });
   });
 
   /********* END SEARCH ***********/
@@ -1745,13 +1872,312 @@ $(document).ready(function() {
     });
   });
 
+  $(document).on('click', '#traktplus .goto_show', function() {
+    $.get(WEBROOT + '/xhr/trakt/summary/show/' + $(this).data('id'), function(data){
+      $('#traktplus').replaceWith(data);
+    });
+  });
+
+  $(document).on('click', '#traktplus .goto_movie', function() {
+    $.get(WEBROOT + '/xhr/trakt/summary/movie/' + $(this).data('id'), function(data){
+      $('#traktplus').replaceWith(data);
+    });
+  });
+
+  $(document).on('click', '#traktplus .goto_episode', function() {
+    $.get(WEBROOT + '/xhr/trakt/summary/episode/' + $(this).data('id') + '/' + $(this).data('season') + '/' + $(this).data('episode'), function(data){
+      $('#traktplus').replaceWith(data);
+    });
+  });
+
+  $(document).on('click', '#traktplus .get_list', function() {
+    $.get(WEBROOT + '/xhr/trakt/' + $(this).data('xhr_url'), function(data){
+      $('#traktplus').replaceWith(data);
+    });
+  });
+
   $(document).on('click', '#traktplus .list_link', function(e) {
     e.stopPropagation();
+  });
+
+  $(document).on('click', '#traktplus .toggle_hidden', function(e) {
+    e.stopPropagation();
+  });
+
+  $(document).on('click', '#traktplus .toggle_hidden', function() {
+    var arrow = $(this).children('img');
+    var div = $(this).next('.hidden');
+
+    if (div.hasClass('active')) {
+      div.removeClass('active');
+      div.slideUp(200);
+      arrow.attr('src', WEBROOT + '/static/images/arrow_down.png');
+    }
+    else {
+      div.addClass('active');
+      div.slideDown(200);
+      arrow.attr('src', WEBROOT + '/static/images/arrow_up.png');
+    }
   });
 
   $(document).on('click', '#traktplus .trakt_user', function() {
     $.get(WEBROOT + '/xhr/trakt/profile/' + $(this).data('username'), function(data){
       $('#traktplus').replaceWith(data);
+    });
+  });
+
+  $(document).on('click', '#traktplus .friend_action', function(e) {
+    e.stopPropagation();
+    var li = $(this).parent().parent();
+    var action = $(this).data('action');
+    var user = $(this).data('user');
+
+    $.get(WEBROOT + '/xhr/trakt/friend/' + action + '/' + user, function(data){
+      if (data.status == 'successful') {
+        if (action == 'approve') {
+          li.children('.req_buttons').remove()
+          li.css('background', 'url(' + WEBROOT + '/static/images/alpha/fff_10.png)');
+          popup_message(user + ' has been added to friends list');
+        }
+        else {
+          li.transition({opacity: 0, duration: 1000}, function(){
+            li.remove();
+          });
+          popup_message(user + 's friend request has been denied');
+        }
+      }
+      else {
+        popup_message(data.status);
+      }
+    });
+  });
+
+  $(document).on('mouseenter', '#traktplus .poster', function(){
+      $(this).find('.item_info').hide();
+      $(this).find('.item_rate').show();
+      $(this).find('.overlay_menu').show();
+    });
+  $(document).on('mouseleave', '#traktplus .poster', function(){
+      $(this).find('.item_rate').hide();
+      $(this).find('.overlay_menu').hide();
+      $(this).find('.item_info').show();
+    });
+
+  function title_str (str) {
+    return (str + '').replace(/^([a-z])|\s+([a-z])/g, function ($1) {
+        return $1.toUpperCase();
+    });
+  }
+
+  $(document).on('click', '#traktplus .poster .rate', function() {
+    var poster = $(this).parent().parent().parent();
+    var button = $(this);
+    var type = poster.data('type');
+    var rating = $(this).data('rating');
+    var data = poster.dataset();
+    var unrate = false;
+
+    if (button.hasClass('rated')) {
+      data['rating'] = 'unrate';
+      unrate = true;
+    }
+    else {
+      data['rating'] = rating;
+    }
+
+    button.css('background', 'url(' + WEBROOT + '/static/images/xhrloading.gif)');
+    $.post(WEBROOT + '/xhr/trakt/action/rate/' + type + '/', data, function(data){
+      if (data.status == 'successful') {
+        if (unrate) {
+          poster.find('.'+rating).remove();
+          button.removeClass('rated');
+          button.attr('title', title_str(rating) + 'd');
+          popup_message(type + ' successfully unrated');
+        }
+        else {
+          poster.append('<div class="' + rating + '"></div>');
+          button.addClass('rated');
+          button.attr('title', 'Unrate');
+          popup_message(type + ' successfully rated as ' + rating + 'd');
+        }
+      }
+      else {
+        popup_message(data.status);
+      }
+      button.css('background', 'url(' + WEBROOT + '/static/images/trakt/heart-' + rating + '.png)');
+    });
+  });
+
+  $(document).on('click', '#traktplus .poster .add_customlist', function() {
+    var poster = $(this).parent().parent();
+    var button = $(this);
+    var data = poster.dataset();
+
+    button.css('background', 'url(' + WEBROOT + '/static/images/xhrloading.gif)');
+    $.post(WEBROOT + '/xhr/trakt/get_lists/', data, function(data){
+      button.css('background', 'url(' + WEBROOT + '/static/images/trakt/list.png)');
+      $('#traktplus').replaceWith(data);
+    });
+  });
+
+  $(document).on('change', '#traktplus .custom_lists .list', function() {
+    var togglebar = $('#traktplus .custom_lists .toggle_hidden');
+    var arrow = togglebar.children('img');
+    var form = $('#traktplus .custom_lists .add_list_form');
+
+    if ($(this).val() != 'none') {
+      if( form.is(':visible') ) {
+        arrow.attr('src', WEBROOT + '/static/images/arrow_down.png');
+        form.removeClass('active');
+        form.slideUp(200);
+      }
+
+      togglebar.hide();
+    }
+    else {
+      togglebar.show();
+    }
+  });
+
+  $(document).on('click', '#traktplus .custom_lists .save', function() {
+    var media = $('#traktplus .list_media').dataset();
+    var list_select = $('#traktplus .custom_lists .list').find(':selected');
+    var form = $('#traktplus .custom_lists form').serializeArray();
+    var data = {};
+
+    if (list_select.val() != 'none') {
+      var list = list_select.dataset();
+      data = {
+        media: JSON.stringify(media),
+        list: JSON.stringify(list),
+        exist: true
+      };
+    }
+    else {
+      data = {
+        media: JSON.stringify(media),
+        list: JSON.stringify(form),
+        exist: false
+      };
+    }
+
+    $.post(WEBROOT + '/xhr/trakt/add_to_list/', data, function(data){
+      remove_loading_gif($('#traktplus .loading'));
+
+      if (data.status == 'successful') {
+        if (list_select.val() != 'none') {
+        popup_message('successfully added ' + media['title'] + ' to ' + list['name']);
+        }
+        else {
+          popup_message('successfully added ' + media['title'] + ' to ' + form[0]['value']);
+        }
+      }
+      else {
+        popup_message(data.status);
+      }
+    });
+  });
+
+  $(document).on('click', '#traktplus .poster .mark_watched', function() {
+    var poster = $(this).parent().parent();
+    var button = $(this);
+    var type = poster.data('type');
+
+    button.css('background', 'url(' + WEBROOT + '/static/images/xhrloading.gif)');
+    $.post(WEBROOT + '/xhr/trakt/action/seen/' + type + '/', poster.dataset(), function(data){
+      if (data.status == 'successful') {
+        poster.append('<div class="watched"></div>');
+        button.transition({opacity: 0, duration: 1000}, function(){
+          button.remove();
+        });
+        popup_message(type + ' successfully marked as watched');
+      }
+      else {
+        img.attr('src', WEBROOT + '/static/images/trakt/seen.png');
+        popup_message(data.status);
+      }
+    });
+  });
+
+  $(document).on('click', '#traktplus .poster .add_collection', function() {
+    var poster = $(this).parent().parent();
+    var button = $(this);
+    var type = poster.data('type');
+
+    button.css('background', 'url(' + WEBROOT + '/static/images/xhrloading.gif)');
+    $.post(WEBROOT + '/xhr/trakt/action/library/' + type + '/', poster.dataset(), function(data){
+      if (data.status == 'successful') {
+        poster.append('<div class="collection"></div>');
+        button.transition({opacity: 0, duration: 1000}, function(){
+          button.remove();
+        });
+        popup_message(type + ' successfully added to collection');
+      }
+      else {
+        img.attr('src', WEBROOT + '/static/images/trakt/collection.png');
+        popup_message(data.status);
+      }
+    });
+  });
+
+  $(document).on('click', '#traktplus .poster .add_watchlist', function() {
+    var poster = $(this).parent().parent();
+    var button = $(this);
+    var type = poster.data('type');
+
+    button.css('background', 'url(' + WEBROOT + '/static/images/xhrloading.gif)');
+    $.post(WEBROOT + '/xhr/trakt/action/watchlist/' + type + '/', poster.dataset(), function(data){
+      if (data.status == 'successful') {
+        poster.append('<div class="watchlist"></div>');
+        button.transition({opacity: 0, duration: 1000}, function(){
+          button.remove();
+        });
+        popup_message(type + ' successfully added to watchlist');
+      }
+      else {
+        img.attr('src', WEBROOT + '/static/images/trakt/watchlist.png');
+        popup_message(data.status);
+      }
+    });
+  });
+
+  $(document).on('click', '#traktplus .media_btn', function(e) {
+    e.stopPropagation();
+  });
+
+  $(document).on('click', '#traktplus .add_sickbeard', function() {
+    $.get(WEBROOT + '/sickbeard/search/?tvdbid=' + $(this).data('tvdb_id'), function(data){
+      $('#sickbeard').replaceWith(data);
+    });
+  });
+
+  $(document).on('click', '#traktplus .add_couchpotato', function() {
+    $.get(WEBROOT + '/xhr/couchpotato/search/?name=' + encodeURIComponent($(this).data('name')), function(data){
+      $('#couchpotato').replaceWith(data);
+    });
+  });
+
+  $(document).on('click', '#traktplus .trailer', function() {
+    $.get(WEBROOT + '/xhr/play/trailer/url/' + encodeURIComponent($(this).data('trailer')));
+  });
+
+  $(document).on('click', '#traktplus .recommendations .dismiss', function() {
+    var li = $(this).parent().parent().parent();
+    var type = li.data('type');
+    var img = $(this).children('img');
+
+    img.attr('src', WEBROOT + '/static/images/xhrloading.gif');
+
+    $.post(WEBROOT + '/xhr/trakt/action/dismiss/' + type + '/', li.dataset(), function(data){
+      if (data.status == 'successful') {
+        li.transition({opacity: 0, duration: 1000}, function(){
+          li.remove();
+      });
+      }
+      else {
+        img.attr('src', WEBROOT + '/static/images/remove_icon.png');
+        popup_message(data.status);
+      }
     });
   });
 
@@ -1963,9 +2389,7 @@ $(document).ready(function() {
         init_modules();
 
         if (module_name == 'server_settings') {
-          get_module('recently_added');
-          get_module('recently_added_movies');
-          get_module('recently_added_albums');
+          poll_modules(['recently_added', 'recently_added_movies', 'recently_added_albums']);
         }
       }
     );
@@ -2027,6 +2451,20 @@ $(document).ready(function() {
     });
   });
 
+  // diskspace
+  $(document).on('click', '#diskspace .group', function() {
+    var ul = $(this).next('.group_disks');
+
+    if (ul.hasClass('active')) {
+      ul.removeClass('active');
+      ul.slideUp(200);
+    }
+    else {
+      ul.addClass('active');
+      ul.slideDown(200);
+    }
+  });
+
   // add/edit disk
 
   $(document).on('click', '#add_disk', function() {
@@ -2037,7 +2475,7 @@ $(document).ready(function() {
     });
   });
 
-  $(document).on('click', '.f_settings_mode #diskspace li', function() {
+  $(document).on('click', '.f_settings_mode #diskspace .disk', function() {
     $.get(WEBROOT + '/xhr/edit_disk_dialog/' + $(this).data('id'), function(data) {
       var popup = $(data);
       $('body').append(popup);
@@ -2135,7 +2573,7 @@ $(document).ready(function() {
 
           $.post(WEBROOT + '/xhr/server_settings_dialog/' + server_id, settings, function(data) {
             if (data.status === 'error') {
-              popup_message('There was an error saving the Media server.');
+              popup_message('There was an error saving the XBMC server.');
               return;
             }
 
@@ -2145,9 +2583,7 @@ $(document).ready(function() {
               $('#extra_settings #server_settings').replaceWith(servers_menu);
             }
 
-            get_module('recently_added');
-            get_module('recently_added_movies');
-            get_module('recently_added_albums');
+            poll_modules(['recently_added', 'recently_added_movies', 'recently_added_albums']);
           });
         }
       });
@@ -2159,7 +2595,7 @@ $(document).ready(function() {
   $('#server_settings_dialog .delete').live('click', function() {
     $.post(WEBROOT + '/xhr/delete_server/' + $(this).data('server_id'), {}, function(data) {
       if (data.status === 'error') {
-        popup_message('There was an error deleting the media server.');
+        popup_message('There was an error deleting the XBMC server.');
       } else {
         $('#server_settings_dialog').closePopup();
         var servers_menu = $(data);
@@ -2168,7 +2604,7 @@ $(document).ready(function() {
           $('#extra_settings #server_settings').replaceWith(servers_menu);
         }
 
-        popup_message('Media server has been deleted.');
+        popup_message('XBMC server has been deleted.');
       }
     });
   });
@@ -2181,20 +2617,19 @@ $(document).ready(function() {
 
       $.get(WEBROOT + '/xhr/switch_server/' + $(this).data('server_id'), function(data) {
         if (data.status === 'error') {
-          popup_message('There was an error switching Media servers.');
+          popup_message('There was an error switching XBMC servers.');
           return;
         }
 
         li.closest('ul').find('.active').removeClass('active');
         li.addClass('active');
 
-        get_module('recently_added');
-        get_module('recently_added_movies');
-        get_module('recently_added_albums');
+        poll_modules(['recently_added', 'recently_added_movies', 'recently_added_albums']);
       });
     }
   });
 
+  // Log Dialog
   $(document).on('click', '#log_dialog .pastebin', function(){
     $(this).text('');
     add_loading_gif(this);
@@ -2206,7 +2641,28 @@ $(document).ready(function() {
     });
   });
 
-  // Send media player notification
+  $(document).on('change', '#log_dialog .level_select', function(){
+    var level = $('#log_dialog .level_select').val();
+
+    if (level === 'all') {
+      $('#log_dialog .log_body').each(function() {
+        $(this).removeClass('disabled');
+      });
+    }
+
+    else {
+      $('#log_dialog .log_body').each(function() {
+        if (!$(this).hasClass(level)) {
+          $(this).addClass('disabled');
+        }
+        else {
+          $(this).removeClass('disabled');
+        }
+      });
+    }
+  });
+
+  // Send XBMC notification
 
   $(document).on('click', '.switch_server .message', function(){
     var label = $(this).data('label');
@@ -2217,7 +2673,7 @@ $(document).ready(function() {
       hostname: hostname
     };
 
-    $.post(WEBROOT + '/xhr/notify', dict, function(data){
+    $.post(WEBROOT + '/xhr/xbmc_notify', dict, function(data){
       var popup = $(data);
       $('body').append(popup);
       popup.showPopup({ dispose: true });
@@ -2247,7 +2703,7 @@ $(document).ready(function() {
       message: message
     };
 
-    $.post(WEBROOT + '/xhr/notify/send', dict, function(data) {
+    $.post(WEBROOT + '/xhr/xbmc_notify/send', dict, function(data) {
       if(data['error']){
         result.append(data['error']);
       }
@@ -2272,7 +2728,7 @@ $(document).ready(function() {
     var popup = $('<div id="updater" class="dialog" align="center"><div class="close" style="display:none;"></div><p>Restarting  <img src="' + WEBROOT + '/static/images/xhrloading.gif"/></p></div>');
     $('body').append(popup);
     popup.showPopup({ dispose: true });
-
+    stop_polling();
     $.get(WEBROOT + '/xhr/restart', function(data){
       if(data['restart_complete']){
         setTimeout(
@@ -2289,6 +2745,7 @@ $(document).ready(function() {
     var popup = $('<div id="updater" class="dialog" align="center"><div class="close" style="display:none;"></div><p>Maraschino is shutting down...</p></div>');
     $('body').append(popup);
     popup.showPopup({ dispose: true });
+    stop_polling();
     $.get(WEBROOT + '/xhr/shutdown', function(data){
       if(data['shutdown_complete']){
         window.open('', '_self', '');
@@ -2485,5 +2942,87 @@ $(document).ready(function() {
   $(document).on('click', '#headphones .head_item', function() {
     $(this).children().replaceWith('<img src="' + WEBROOT + '/static/images/xhrloading.gif" width="14" height="14">');
   });
+//script launcher
 
-});
+  $(document).on('click', '#add_script', function() {
+    $.get(WEBROOT + '/xhr/add_script_dialog', function(data) {
+      var popup = $(data);
+      $('body').append(popup);
+      popup.showPopup({ dispose: true });
+    });
+  });
+
+  $(document).on('click', '.f_settings_mode #script_launcher li', function() {
+    $.get(WEBROOT + '/xhr/edit_script_dialog/' + $(this).data('id'), function(data) {
+      var popup = $(data);
+      $('body').append(popup);
+      popup.showPopup({ dispose: true });
+    });
+    return false;
+  });
+
+  $(document).on('click', '#add_edit_script_dialog .choices .save', function() {
+    var form = $('#add_edit_script_dialog form');
+
+    if (!validate_form(form)) {
+      return false;
+    }
+
+    var settings = form.serialize();
+    $.post(WEBROOT + '/xhr/add_edit_script', settings, function(data) {
+      if (!data.status) {
+        $('#script_launcher').replaceWith(data);
+        $('#add_edit_script_dialog .close').click();
+      } else  if (data.status == 'Command Required') {
+        $('#add_edit_script_dialog label[for=id_script_command]').html('Command (required) <span class="invalid">(invalid)</span>');
+      } else if (data.status == 'Label Required'){
+      	$('#add_edit_script_dialog label[for=id_script_label]').html('Label (required) <span class="invalid">(invalid)</span>');
+      } else {
+        $('#add_edit_script_dialog label[for=id_script_command]').html('Command (required) <span class="invalid">(invalid)</span>');
+      	$('#add_edit_script_dialog label[for=id_script_label]').html('Label (required) <span class="invalid">(invalid)</span>');
+      }
+    });
+  });
+
+  $(document).on('click', '#add_edit_script_dialog .choices .delete', function() {
+    var script_id = $('#add_edit_script_dialog input[name=script_id]').val();
+    $.post(WEBROOT + '/xhr/delete_script/' + script_id, {}, function(data) {
+      if (!data.status) {
+        $('#script_launcher').replaceWith(data);
+        $('#add_edit_script_dialog .close').click();
+      }
+    });
+  });
+
+  $(document).on('click', '#script_launcher .script', function() {
+    $.get(WEBROOT + '/xhr/script_launcher/start_script/' + $(this).data('id'), function(data) {
+    	$('#script_launcher').replaceWith(data);
+    });
+  });
+
+  // Quit module polling
+  function stop_polling(){
+    for (var key in timeOuts) {
+      clearTimeout(timeOuts[key]);
+    }
+  }
+
+  // Poll list of modules
+  function poll_modules(list){
+    $.each(list, function(i){
+      if ($('#'+list[i]).hasClass('module')) {
+        get_module(list[i]);
+      }
+    });
+  }
+
+  // Prevent body scrolling
+  $(document).on('mousewheel', 'div[class*=noscroll]', function (e, d) {
+    var height = $(this).height(),
+        scrollHeight = this.scrollHeight,
+        scrollTop = this.scrollTop;
+
+    if((scrollTop === (scrollHeight - height) && d < 0) || (scrollTop === 0 && d > 0)) {
+      e.preventDefault();
+    }
+  });});

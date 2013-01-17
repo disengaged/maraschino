@@ -2,8 +2,10 @@ from flask import render_template, request, jsonify, json, send_file
 from jinja2.filters import FILTERS
 from maraschino.tools import get_setting_value, requires_auth
 from maraschino import logger, app, WEBROOT
-import urllib
+import urllib2
 import StringIO
+import base64
+
 
 def couchpotato_http():
     if get_setting_value('couchpotato_https') == '1':
@@ -11,52 +13,55 @@ def couchpotato_http():
     else:
         return 'http://'
 
-def login_string():
-    try:
-        login = '%s:%s@' % (get_setting_value('couchpotato_user'), get_setting_value('couchpotato_password'))
-
-    except:
-        login = ''
-
-    return login
-
 
 def couchpotato_url():
     port = get_setting_value('couchpotato_port')
     url_base = get_setting_value('couchpotato_ip')
-    
+    webroot = get_setting_value('couchpotato_webroot')
+
     if port:
-        url_base = '%s:%s' % ( url_base, port )
-    
-    url = '%s/api/%s' % ( url_base, get_setting_value('couchpotato_api') )
-    
-    if login_string():
-        return couchpotato_http() + login_string() + url
-    
+        url_base = '%s:%s' % (url_base, port)
+
+    if webroot:
+        url_base = '%s/%s' % (url_base, webroot)
+
+    url = '%s/api/%s' % (url_base, get_setting_value('couchpotato_api'))
+
     return couchpotato_http() + url
 
 
 def couchpotato_url_no_api():
     port = get_setting_value('couchpotato_port')
     url_base = get_setting_value('couchpotato_ip')
-    
+    webroot = get_setting_value('couchpotato_webroot')
+
     if port:
-        url_base = '%s:%s' % ( url_base, port )
-    
-    if login_string():
-        return couchpotato_http() + login_string() + url_base
-        
+        url_base = '%s:%s' % (url_base, port)
+
+    if webroot:
+        url_base = '%s/%s' % (url_base, webroot)
+
     return couchpotato_http() + url_base
 
 
 def couchpotato_api(method, params=None, use_json=True, dev=False):
+    username = get_setting_value('couchpotato_user')
+    password = get_setting_value('couchpotato_password')
+
     if params:
         params = '/?%s' % params
     else:
         params = '/'
 
+    params = (params).replace(' ', '%20')
     url = '%s/%s%s' % (couchpotato_url(), method, params)
-    data = urllib.urlopen(url).read()
+    req = urllib2.Request(url)
+
+    if username and password:
+        base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
+        req.add_header("Authorization", "Basic %s" % base64string)
+
+    data = urllib2.urlopen(req).read()
     if dev:
         print url
         print data
@@ -80,8 +85,17 @@ FILTERS['cp_img'] = couchpotato_image
 
 @app.route('/xhr/couchpotato/image/<path:url>')
 def couchpotato_proxy(url):
+    username = get_setting_value('couchpotato_user')
+    password = get_setting_value('couchpotato_password')
+
     url = '%s/file.cache/%s' % (couchpotato_url(), url)
-    img = StringIO.StringIO(urllib.urlopen(url).read())
+    req = urllib2.Request(url)
+
+    if username and password:
+        base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
+        req.add_header("Authorization", "Basic %s" % base64string)
+
+    img = StringIO.StringIO(urllib2.urlopen(req).read())
     logger.log('CouchPotato :: Fetching image from %s' % (url), 'DEBUG')
     return send_file(img, mimetype='image/jpeg')
 
@@ -91,7 +105,7 @@ def couchpotato_proxy(url):
 def xhr_couchpotato(status=False):
     if status:
         status_string = 'status=%s' % status
-        template = 'couchpotato-all.html'
+        template = 'couchpotato/all.html'
     else:
         status = 'wanted'
         status_string = False
@@ -107,6 +121,11 @@ def xhr_couchpotato(status=False):
         couchpotato = None
 
     logger.log('CouchPotato :: Fetching "%s movies" list (DONE)' % status, 'INFO')
+
+    if status == 'wanted' and not type(couchpotato) is list:
+        logger.log('CouchPotato :: Wanted movies list is empty', 'INFO')
+        return cp_search('There are no movies in your wanted list.')
+
     return render_template(template,
         url=couchpotato_url(),
         couchpotato=couchpotato,
@@ -114,32 +133,53 @@ def xhr_couchpotato(status=False):
     )
 
 
+@app.route('/xhr/couchpotato/history/')
+def xhr_couchpotato_history():
+    unread = 0
+    try:
+        couchpotato = couchpotato_api('notification.list')
+        couchpotato = couchpotato['notifications']
+        for notification in couchpotato:
+            if not notification['read']:
+                unread = unread + 1
+
+    except Exception as e:
+        logger.log('CouchPotato :: Could not retrieve Couchpotato - %s' % (e), 'WARNING')
+        couchpotato = None
+
+    return render_template('couchpotato/history.html',
+        couchpotato=couchpotato,
+        unread=unread,
+    )
+
+
 @app.route('/xhr/couchpotato/search/')
-def cp_search():
+def cp_search(message=None):
     couchpotato = {}
     params = False
     profiles = {}
 
     try:
-        params = 'q=' + request.args['name']
+        query = request.args['name']
+        params = 'q=' + query
     except:
         pass
 
     if params:
         try:
-            logger.log('CouchPotato :: Searching for movie: %s' % (params), 'INFO')
+            logger.log('CouchPotato :: Searching for movie: %s' % (query), 'INFO')
             couchpotato = couchpotato_api('movie.search', params=params)
             amount = len(couchpotato['movies'])
-            logger.log('CouchPotato :: found %i movies for %s' % (amount, params), 'INFO')
+            logger.log('CouchPotato :: found %i movies for %s' % (amount, query), 'INFO')
             if couchpotato['success'] and amount != 0:
                 couchpotato = couchpotato['movies']
                 try:
-                    logger.log('CouchPotato :: Getting quality profiles', 'INFO')
+                    # logger.log('CouchPotato :: Getting quality profiles', 'INFO')
                     profiles = couchpotato_api('profile.list')
                 except Exception as e:
                     log_exception(e)
             else:
-                return render_template('couchpotato-search.html', error='No movies with "%s" were found' % (params[2:]), couchpotato='results')
+                return render_template('couchpotato/search.html', error='No movies with "%s" were found' % (query), couchpotato='results')
 
         except Exception as e:
             log_exception(e)
@@ -149,10 +189,11 @@ def cp_search():
         logger.log('CouchPotato :: Loading search template', 'DEBUG')
         couchpotato = None
 
-    return render_template('couchpotato-search.html',
+    return render_template('couchpotato/search.html',
         data=couchpotato,
         couchpotato='results',
         profiles=profiles,
+        error=message
     )
 
 
@@ -311,7 +352,7 @@ def cp_settings():
         logger.log('CouchPotato :: Retrieving settings', 'INFO')
         result = couchpotato_api('settings')
         logger.log('CouchPotato :: Retrieving settings (DONE)', 'INFO')
-        return render_template('couchpotato-settings.html',
+        return render_template('couchpotato/settings.html',
             couchpotato=result,
         )
     except Exception as e:
@@ -336,7 +377,7 @@ def cp_get_movie(id):
         except Exception as e:
             log_exception(e)
         logger.log('CouchPotato :: Retrieving movie info (DONE)', 'INFO')
-        return render_template('couchpotato-info.html',
+        return render_template('couchpotato/info.html',
             couchpotato=result,
             profiles=profiles,
         )
@@ -380,10 +421,48 @@ def cp_log(type='all', lines=30):
         result = couchpotato_api('logging.partial', 'type=%s&lines=%s' % (type, lines))
         if result['success']:
             logger.log('CouchPotato :: Retrieving "%s" log (DONE)' % type, 'INFO')
-            return render_template('couchpotato-log.html',
+            return render_template('couchpotato/log.html',
                 couchpotato=result,
                 level=type,
             )
+    except Exception as e:
+        log_exception(e)
+
+    return jsonify({'success': False})
+
+
+@app.route('/xhr/couchpotato/notification/read/')
+@app.route('/xhr/couchpotato/notification/read/<int:id>/')
+def cp_notification_read(id=False):
+    """
+    Mark notification as read in CP
+    ---- Params -----
+    ids <optional>      int         Notification id - if empty will mark all notifications
+    """
+    try:
+        logger.log('CouchPotato :: Marking notification "%i" as read' % id, 'INFO')
+        if id:
+            couchpotato_api('notification.markread', 'ids=%i' % id)
+        else:
+            couchpotato_api('notification.markread')
+        return jsonify({'success': True})
+
+    except Exception as e:
+        log_exception(e)
+
+    return jsonify({'success': False})
+
+
+@app.route('/xhr/couchpotato/release/<action>/<id>/')
+@requires_auth
+def release_action(action, id):
+    if id.isdigit():
+        id = int(id)
+
+    try:
+        logger.log('CouchPotato :: %sing release %s' % (action.title()[:-1], id), 'INFO')
+        result = couchpotato_api('release.%s' % action, 'id=%s' % id)
+        return jsonify(result)
     except Exception as e:
         log_exception(e)
 

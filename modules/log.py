@@ -4,21 +4,13 @@ from maraschino.noneditable import *
 from maraschino import logger
 from pastebin.pastebin import PastebinAPI
 from maraschino.tools import requires_auth
-
+import maraschino
 
 @app.route('/xhr/log')
 @requires_auth
 def xhr_log():
-    file = open(LOG_FILE)
-    log = []
-
-    for line in reversed(file.readlines()):
-        log.append(line.rstrip())
-
-    file.close()
-
-    return render_template('log_dialog.html',
-        log=log,
+    return render_template('dialogs/log_dialog.html',
+        log=maraschino.LOG_LIST,
     )
 
 
@@ -42,7 +34,7 @@ def xhr_log_pastebin():
     except Exception as e:
         logger.log('LOG :: Log failed to upload - %s' % e, 'INFO')
 
-    return render_template('log_dialog.html',
+    return render_template('dialogs/log_dialog.html',
         log=log,
         url=url,
     )

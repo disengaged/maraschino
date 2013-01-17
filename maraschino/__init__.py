@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Maraschino module"""
+
 import sys
 import os
 import subprocess
@@ -14,6 +17,7 @@ DAEMON = False
 PIDFILE = None
 VERBOSE = True
 LOG_FILE = None
+LOG_LIST = []
 PORT = None
 DATABASE = None
 INIT_LOCK = threading.Lock()
@@ -25,31 +29,37 @@ logger = None
 SERVER = None
 HOST = '0.0.0.0'
 KIOSK = False
+DATA_DIR = None
+SCRIPT_DIR = None
+THREADS = []
 
 AUTH = {
     'username': None,
     'password': None,
 }
 
+UPDATER = True
 CURRENT_COMMIT = None
 LATEST_COMMIT = None
 COMMITS_BEHIND = 0
 COMMITS_COMPARE_URL = ''
+FIRST_RUN = 0
 
 
 def initialize():
-
+    """Init function for this module"""
     with INIT_LOCK:
 
         global __INITIALIZED__, app, FULL_PATH, RUNDIR, ARGS, DAEMON, PIDFILE, VERBOSE, LOG_FILE, LOG_DIR, logger, PORT, SERVER, DATABASE, AUTH, \
-                CURRENT_COMMIT, LATEST_COMMIT, COMMITS_BEHIND, COMMITS_COMPARE_URL, USE_GIT, WEBROOT, HOST, KIOSK
+                UPDATER, CURRENT_COMMIT, LATEST_COMMIT, COMMITS_BEHIND, COMMITS_COMPARE_URL, USE_GIT, WEBROOT, HOST, KIOSK, DATA_DIR, SCRIPT_DIR, \
+                THREADS, FIRST_RUN
 
         if __INITIALIZED__:
             return False
 
         # Set up logger
         if not LOG_FILE:
-            LOG_FILE = os.path.join(RUNDIR, 'logs', 'maraschino.log')
+            LOG_FILE = os.path.join(DATA_DIR, 'logs', 'maraschino.log')
 
         FILENAME = os.path.basename(LOG_FILE)
         LOG_DIR = LOG_FILE[:-len(FILENAME)]
@@ -63,6 +73,10 @@ def initialize():
 
         logger = maraschinoLogger(LOG_FILE, VERBOSE)
 
+        #set up script dir
+        if not SCRIPT_DIR:
+            SCRIPT_DIR = os.path.join(RUNDIR, 'scripts')
+
         # check if database exists or create it
         from database import init_db
 
@@ -72,9 +86,14 @@ def initialize():
         try:
             logger.log('Opening database at: %s' % (DATABASE), 'INFO')
             open(DATABASE)
-
         except IOError:
-            logger.log('Opening database failed', 'CRITICAL')
+            logger.log('Opening database failed', 'WARNING')
+
+            #Check if a version file exists. If not assume latest revision.
+            version_file = os.path.join(DATA_DIR, 'Version.txt')
+            if not os.path.exists(version_file):
+                FIRST_RUN = 1
+
             try:
                 logger.log('Checking if PATH exists: %s' % (DATABASE), 'WARNING')
                 dbpath = os.path.dirname(DATABASE)
@@ -98,10 +117,10 @@ def initialize():
         # Web server settings
         from tools import get_setting_value
 
-        if get_setting_value('maraschino_port') != None or '':
+        if get_setting_value('maraschino_port'):
             port_arg = False
             for arg in ARGS:
-                if arg == '--port' or '-p':
+                if arg == '--port' or arg == '-p':
                     port_arg = True
             if not port_arg:
                 PORT = int(get_setting_value('maraschino_port'))
@@ -119,7 +138,7 @@ def initialize():
         # Set up web server
         if '--webroot' not in str(ARGS):
             WEBROOT = get_setting_value('maraschino_webroot')
-            if WEBROOT is None:
+            if WEBROOT is None or DEVELOPMENT:
                 WEBROOT = ''
 
         if WEBROOT:
@@ -130,18 +149,15 @@ def initialize():
             d = wsgiserver.WSGIPathInfoDispatcher({'/': app})
         SERVER = wsgiserver.CherryPyWSGIServer((HOST, PORT), d)
 
-        # Set up webroot for .less
-        less_webroot = os.path.join(RUNDIR, 'static/less/webroot.less')
-        f = open(less_webroot, 'w')
-        if WEBROOT:
-            f.write('@webroot: "%s/static";' % (WEBROOT[1:]))
-        else:
-            f.write('@webroot: "static";')
-        f.close()
+        __INITIALIZED__ = True
+        return True
 
-        # Set up the updater
-        from maraschino.updater import checkGithub, gitCurrentVersion
 
+def init_updater():
+    from maraschino.updater import checkGithub, gitCurrentVersion
+    global USE_GIT, CURRENT_COMMIT, COMMITS_BEHIND
+
+    if UPDATER:
         if os.name == 'nt':
             USE_GIT = False
         else:
@@ -149,7 +165,7 @@ def initialize():
             if USE_GIT:
                 gitCurrentVersion()
 
-        version_file = os.path.join(RUNDIR, 'Version.txt')
+        version_file = os.path.join(DATA_DIR, 'Version.txt')
         if os.path.isfile(version_file):
             f = open(version_file, 'r')
             CURRENT_COMMIT = f.read()
@@ -159,17 +175,18 @@ def initialize():
 
         threading.Thread(target=checkGithub).start()
 
-        __INITIALIZED__ = True
-        return True
-
 
 def start_schedules():
-    from maraschino.updater import checkGithub
-    SCHEDULE.add_interval_job(checkGithub, hours=6)
+    """Add all periodic jobs to the scheduler"""
+    if UPDATER:
+        # check every 6 hours for a new version
+        from maraschino.updater import checkGithub
+        SCHEDULE.add_interval_job(checkGithub, hours=6)
     SCHEDULE.start()
 
 
 def start():
+    """Start the actual server"""
     if __INITIALIZED__:
 
         start_schedules()
@@ -189,6 +206,7 @@ def start():
 
 
 def stop():
+    """Shutdown Maraschino"""
     logger.log('Shutting down Maraschino...', 'INFO')
 
     if not DEVELOPMENT:
@@ -208,6 +226,7 @@ def stop():
 
 
 def restart():
+    """Restart Maraschino"""
     SERVER.stop()
     popen_list = [sys.executable, FULL_PATH]
     popen_list += ARGS
@@ -217,8 +236,9 @@ def restart():
 
 
 def daemonize():
+    """Start Maraschino as a daemon"""
     if threading.activeCount() != 1:
-        logger.log('There are %r active threads. Daemonizing may cause strange behavior.' % threading.enumerate(), 'WARNING')
+        logger.log('There are %s active threads. Daemonizing may cause strange behavior.' % threading.activeCount(), 'WARNING')
 
     sys.stdout.flush()
     sys.stderr.flush()
@@ -233,6 +253,8 @@ def daemonize():
     except OSError, e:
         sys.exit('1st fork failed: %s [%d]' % (e.strerror, e.errno))
 
+    os.chdir('/')
+    os.umask(0)
     os.setsid()
 
     try:
@@ -243,11 +265,16 @@ def daemonize():
     except OSError, e:
         sys.exit('2nd fork failed: %s [%d]' % (e.strerror, e.errno))
 
-    os.chdir('/')
-    os.umask(0)
     pid = os.getpid()
 
     logger.log('Daemonized to PID: %s' % pid, 'INFO')
     if PIDFILE:
         logger.log('Writing PID %s to %s' % (pid, PIDFILE), 'INFO')
         file(PIDFILE, 'w').write("%s\n" % pid)
+
+
+@app.context_processor
+def utility_processor():
+    def webroot_url(url=''):
+        return WEBROOT + url
+    return dict(webroot_url=webroot_url)

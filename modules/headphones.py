@@ -8,14 +8,33 @@ import urllib2
 import base64
 
 
-def headphones_api(command, use_json=True, dev=False):
-    hostname = get_setting_value('headphones_host')
+def headphones_http():
+    if get_setting_value('headphones_https') == '1':
+        return 'https://'
+    else:
+        return 'http://'
+
+
+def headphones_url():
     port = get_setting_value('headphones_port')
+    url_base = get_setting_value('headphones_host')
+    webroot = get_setting_value('headphones_webroot')
+
+    if port:
+        url_base = '%s:%s' % (url_base, port)
+
+    if webroot:
+        url_base = '%s/%s' % (url_base, webroot)
+
+    return headphones_http() + url_base
+
+
+def headphones_api(command, use_json=True, dev=False):
     username = get_setting_value('headphones_user')
     password = get_setting_value('headphones_password')
     apikey = get_setting_value('headphones_api')
 
-    url = 'http://%s:%s/api?apikey=%s&cmd=%s' % (hostname, port, apikey, command)
+    url = '%s/api?apikey=%s&cmd=%s' % (headphones_url(), apikey, command)
 
     request = urllib2.Request(url)
     base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
@@ -49,24 +68,9 @@ def hp_compact():
     return get_setting_value('headphones_compact') == '1'
 
 
-def headphones_url():
-    url = 'http://'
-
-    hostname = get_setting_value('headphones_host')
-    port = get_setting_value('headphones_port')
-    username = get_setting_value('headphones_user')
-    password = get_setting_value('headphones_password')
-
-    if len(password) > 0:
-        url += '%s:%s@' % (username, password)
-
-    url += '%s:%s' % (hostname, port)
-    return url
-
-
 def headphones_exception(e):
     logger.log('HEADPHONES :: EXCEPTION -- %s' % e, 'DEBUG')
-    return render_template('headphones-base.html', headphones=True, message=e)
+    return render_template('headphones/base.html', headphones=True, message=e)
 
 
 def hp_artistart(id):
@@ -91,28 +95,38 @@ def xhr_headphones_image(type, id):
         img = RUNDIR + '/static/images/applications/HeadPhones.png'
         return send_file(img, mimetype='image/jpeg')
 
-    img = StringIO.StringIO(urllib.urlopen(url).read())
+    username = get_setting_value('headphones_user')
+    password = get_setting_value('headphones_password')
+
+    request = urllib2.Request(url)
+    base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
+    request.add_header("Authorization", "Basic %s" % base64string)
+
+    img = StringIO.StringIO(urllib2.urlopen(request).read())
     return send_file(img, mimetype='image/jpeg')
 
 
 @app.route('/xhr/headphones/')
 @requires_auth
 def xhr_headphones():
-    return xhr_headphones_artists()
+    return xhr_headphones_upcoming()
 
 
 @app.route('/xhr/headphones/artists/')
 @requires_auth
-def xhr_headphones_artists():
+def xhr_headphones_artists(mobile=False):
     logger.log('HEADPHONES :: Fetching artists list', 'INFO')
+    artists = []
 
     try:
         headphones = headphones_api('getIndex')
         updates = headphones_api('getVersion')
     except Exception as e:
+        if mobile:
+            headphones_exception(e)
+            return artists
         return headphones_exception(e)
 
-    artists = []
 
     for artist in headphones:
         if not 'Fetch failed' in artist['ArtistName']:
@@ -121,14 +135,17 @@ def xhr_headphones_artists():
             except:
                 artist['Percent'] = 0
 
-            if not hp_compact():
+            if not hp_compact() and not mobile:
                 try:
                     artist['ThumbURL'] = hp_artistart(artist['ArtistID'])
                 except:
                     pass
             artists.append(artist)
 
-    return render_template('headphones.html',
+    if mobile:
+        return artists
+
+    return render_template('headphones/artists.html',
         headphones=True,
         artists=artists,
         updates=updates,
@@ -138,7 +155,7 @@ def xhr_headphones_artists():
 
 @app.route('/xhr/headphones/artist/<artistid>/')
 @requires_auth
-def xhr_headphones_artist(artistid):
+def xhr_headphones_artist(artistid, mobile=False):
     logger.log('HEADPHONES :: Fetching artist', 'INFO')
 
     try:
@@ -146,14 +163,17 @@ def xhr_headphones_artist(artistid):
     except Exception as e:
         return headphones_exception(e)
 
-    if not hp_compact():
+    if not hp_compact() and not mobile:
         for album in albums['albums']:
             try:
                 album['ThumbURL'] = hp_albumart(album['AlbumID'])
             except:
                 pass
 
-    return render_template('headphones-artist.html',
+    if mobile:
+        return albums
+
+    return render_template('headphones/artist.html',
         albums=albums,
         headphones=True,
         compact=hp_compact(),
@@ -162,7 +182,7 @@ def xhr_headphones_artist(artistid):
 
 @app.route('/xhr/headphones/album/<albumid>/')
 @requires_auth
-def xhr_headphones_album(albumid):
+def xhr_headphones_album(albumid, mobile=False):
     logger.log('HEADPHONES :: Fetching album', 'INFO')
 
     try:
@@ -188,7 +208,9 @@ def xhr_headphones_album(albumid):
     album['TotalDuration'] = convert_track_duration(album['TotalDuration'])
     album['Tracks'] = len(headphones['tracks'])
 
-    return render_template('headphones-album.html',
+    if mobile:
+        return headphones
+    return render_template('headphones/album.html',
         album=headphones,
         headphones=True,
         compact=hp_compact(),
@@ -197,7 +219,7 @@ def xhr_headphones_album(albumid):
 
 @app.route('/xhr/headphones/upcoming/')
 @requires_auth
-def xhr_headphones_upcoming():
+def xhr_headphones_upcoming(mobile=False):
     logger.log('HEADPHONES :: Fetching upcoming albums', 'INFO')
 
     try:
@@ -208,11 +230,12 @@ def xhr_headphones_upcoming():
     if upcoming == []:
         upcoming = 'empty'
 
-    for album in upcoming:
-        try:
-            album['ThumbURL'] = hp_albumart(album['AlbumID'])
-        except:
-            pass
+    if not mobile:
+        for album in upcoming:
+            try:
+                album['ThumbURL'] = hp_albumart(album['AlbumID'])
+            except:
+                pass
 
     try:
         wanted = headphones_api('getWanted')
@@ -222,13 +245,17 @@ def xhr_headphones_upcoming():
     if wanted == []:
         wanted = 'empty'
 
-    for album in wanted:
-        try:
-            album['ThumbURL'] = hp_albumart(album['AlbumID'])
-        except:
-            pass
+    if not mobile:
+        for album in wanted:
+            try:
+                album['ThumbURL'] = hp_albumart(album['AlbumID'])
+            except:
+                pass
 
-    return render_template('headphones-upcoming.html',
+    if mobile:
+        return [upcoming, wanted]
+
+    return render_template('headphones.html',
         upcoming=upcoming,
         wanted=wanted,
         headphones=True,
@@ -246,15 +273,34 @@ def xhr_headphones_similar():
     except Exception as e:
         return headphones_exception(e)
 
-    return render_template('headphones-similar.html',
+    return render_template('headphones/similar.html',
         similar=headphones,
+        headphones=True,
+    )
+
+
+@app.route('/xhr/headphones/history/')
+@requires_auth
+def xhr_headphones_history(mobile=False):
+    logger.log('HEADPHONES :: Fetching history', 'INFO')
+
+    try:
+        headphones = headphones_api('getHistory')
+    except Exception as e:
+        return headphones_exception(e)
+
+    if mobile:
+        return headphones
+
+    return render_template('headphones/history.html',
+        history=headphones,
         headphones=True,
     )
 
 
 @app.route('/xhr/headphones/search/<type>/<query>/')
 @requires_auth
-def xhr_headphones_search(type, query):
+def xhr_headphones_search(type, query, mobile=False):
     if type == 'artist':
         logger.log('HEADPHONES :: Searching for artist', 'INFO')
         command = 'findArtist&name=%s' % urllib.quote(query)
@@ -270,7 +316,10 @@ def xhr_headphones_search(type, query):
     for artist in headphones:
         artist['url'].replace('\/', '/')
 
-    return render_template('headphones-search_dialog.html',
+        if mobile:
+            return headphones
+
+    return render_template('headphones/search_dialog.html',
         headphones=True,
         search=headphones,
         query=query
@@ -279,7 +328,7 @@ def xhr_headphones_search(type, query):
 
 @app.route('/xhr/headphones/artist/<artistid>/<action>/')
 @requires_auth
-def xhr_headphones_artist_action(artistid, action):
+def xhr_headphones_artist_action(artistid, action, mobile=False):
     if action == 'pause':
         logger.log('HEADPHONES :: Pausing artist', 'INFO')
         command = 'pauseArtist&id=%s' % artistid
@@ -306,6 +355,10 @@ def xhr_headphones_artist_action(artistid, action):
         else:
             Thread(target=headphones_api, args=(command, False)).start()
     except Exception as e:
+        if mobile:
+            headphones_exception(e)
+            return jsonify(error='failed')
+
         return headphones_exception(e)
 
     return jsonify(status='successful')
@@ -313,7 +366,7 @@ def xhr_headphones_artist_action(artistid, action):
 
 @app.route('/xhr/headphones/album/<albumid>/<status>/')
 @requires_auth
-def xhr_headphones_album_status(albumid, status):
+def xhr_headphones_album_status(albumid, status, mobile=False):
     if status == 'wanted':
         logger.log('HEADPHONES :: Marking album as wanted', 'INFO')
         command = 'queueAlbum&id=%s' % albumid
@@ -327,6 +380,10 @@ def xhr_headphones_album_status(albumid, status):
     try:
         Thread(target=headphones_api, args=(command, False)).start()
     except Exception as e:
+        if mobile:
+            headphones_exception(e)
+            return jsonify(error='failed')
+
         return headphones_exception(e)
 
     return jsonify(status='successful')

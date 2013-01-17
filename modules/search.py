@@ -1,221 +1,204 @@
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 
-from Maraschino import app
-from maraschino.tools import *
-from maraschino import logger
-from sites.nzbmatrix import *
-from sites.nzbsu import *
+from maraschino.tools import requires_auth, get_setting_value, convert_bytes
+from maraschino import app, logger
+from feedparser import feedparser
+from maraschino.models import NewznabSite
+from maraschino.database import db_session
+from xmltodict import xmltodict
 import urllib
+import re
+
 
 # Newznab Category List:
-cat_newznab = [
-        {'id': '', 'name': 'Everything'},
-        {'id': 1000, 'name': 'Console'},
-        {'id': 1010, 'name': 'Console: NDS'},
-        {'id': 1080, 'name': 'Console: PS3'},
-        {'id': 1020, 'name': 'Console: PSP'},
-        {'id': 1030, 'name': 'Console: Wii'},
-        {'id': 1060, 'name': 'Console: WiiWare/VC'},
-        {'id': 1070, 'name': 'Console: XBOX 360 DLC'},
-        {'id': 1040, 'name': 'Console: Xbox'},
-        {'id': 1050, 'name': 'Console: Xbox 360'},
-        {'id': 2000, 'name': 'Movies'},
-        {'id': 2010, 'name': 'Movies: Foreign'},
-        {'id': 2040, 'name': 'Movies: HD'},
-        {'id': 2020, 'name': 'Movies: Other'},
-        {'id': 2030, 'name': 'Movies: SD'},
-        {'id': 3000, 'name': 'Audio'},
-        {'id': 3030, 'name': 'Audio: Audiobook'},
-        {'id': 3040, 'name': 'Audio: Lossless'},
-        {'id': 3010, 'name': 'Audio: MP3'},
-        {'id': 3020, 'name': 'Audio: Video'},
-        {'id': 4000, 'name': 'PC'},
-        {'id': 4010, 'name': 'PC: 0day'},
-        {'id': 4050, 'name': 'PC: Games'},
-        {'id': 4020, 'name': 'PC: ISO'},
-        {'id': 4030, 'name': 'PC: Mac'},
-        {'id': 4040, 'name': 'PC: Phone'},
-        {'id': 5000, 'name': 'TV'},
-        {'id': 5020, 'name': 'TV: Foreign'},
-        {'id': 5040, 'name': 'TV: HD'},
-        {'id': 5050, 'name': 'TV: Other'},
-        {'id': 5030, 'name': 'TV: SD'},
-        {'id': 5060, 'name': 'TV: Sport'},
-        {'id': 6000, 'name': 'XXX'},
-        {'id': 6010, 'name': 'XXX: DVD'},
-        {'id': 6020, 'name': 'XXX: WMV'},
-        {'id': 6030, 'name': 'XXX: XviD'},
-        {'id': 6040, 'name': 'XXX: x264'},
-        {'id': 7000, 'name': 'Other'},
-        {'id': 7030, 'name': 'Other: Comics'},
-        {'id': 7020, 'name': 'Other: Ebook'},
-        {'id': 7010, 'name': 'Other: Misc'}
-    ]
+def cat_newznab(url):
+    categories = [{'id': '0', 'name': 'Everything'}]
+    try:
+        result = xmltodict.parse(urllib.urlopen(url + '/api?t=caps&o=xml').read())
+    except:
+        return []
 
-# NZBMatrix Category List:
-cat_nzbmatrix = [
-        {'id': 0, 'name': 'Everything'},
-        {'label': 'Movies', 'value':[
-            {'id': 1, 'name': 'Movies: DVD'},
-            {'id': 2, 'name': 'Movies: Divx/Xvid'},
-            {'id': 54, 'name': 'Movies: BRRip'},
-            {'id': 42, 'name': 'Movies: HD (x264)'},
-            {'id': 50, 'name': 'Movies: HD (Image)'},
-            {'id': 48, 'name': 'Movies: WMV-HD'},
-            {'id': 3, 'name': 'Movies: SVCD/VCD'},
-            {'id': 4, 'name': 'Movies: Other'},
-          ]
-        },
-        {'label': 'TV', 'value': [
-            {'id': 5, 'name': 'TV: DVD'},
-            {'id': 6, 'name': 'TV: Divx/Xvid'},
-            {'id': 41, 'name': 'TV: HD'},
-            {'id': 7, 'name': 'TV: Sport/Ent'},
-            {'id': 8, 'name': 'TV: Other'},
-          ]
-        },
-        {'label': 'Documentaries', 'value': [
-            {'id': 9, 'name': 'Documentaries: STD'},
-            {'id': 53, 'name': 'Documentaries: HD'},
-          ]
-        },
-        {'label': 'Games', 'value': [
-            {'id': 10, 'name': 'Games: PC'},
-            {'id': 11, 'name': 'Games: PS2'},
-            {'id': 43, 'name': 'Games: PS3'},
-            {'id': 12, 'name': 'Games: PSP'},
-            {'id': 13, 'name': 'Games: Xbox'},
-            {'id': 14, 'name': 'Games: Xbox360'},
-            {'id': 56, 'name': 'Games: Xbox360 (Other)'},
-            {'id': 15, 'name': 'Games: PS1'},
-            {'id': 16, 'name': 'Games: Dreamcast'},
-            {'id': 44, 'name': 'Games: Wii'},
-            {'id': 51, 'name': 'Games: Wii VC'},
-            {'id': 45, 'name': 'Games: DS'},
-            {'id': 46, 'name': 'Games: GameCube'},
-            {'id': 17, 'name': 'Games: Other'},
-          ]
-        },
-        {'label': 'Apps', 'value': [
-            {'id': 18, 'name': 'Apps: PC'},
-            {'id': 19, 'name': 'Apps: Mac'},
-            {'id': 52, 'name': 'Apps: Portable'},
-            {'id': 20, 'name': 'Apps: Linux'},
-            {'id': 55, 'name': 'Apps: Phone'},
-            {'id': 21, 'name': 'Apps: Other'},
-          ]
-        },
-        {'label': 'Music', 'value': [
-            {'id': 22, 'name': 'Music: MP3 Albums'},
-            {'id': 47, 'name': 'Music: MP3 Singles'},
-            {'id': 23, 'name': 'Music: Lossless'},
-            {'id': 24, 'name': 'Music: DVD'},
-            {'id': 25, 'name': 'Music: Video'},
-            {'id': 27, 'name': 'Music: Other'},
-          ]
-        },
-        {'label': 'Anime', 'value': [
-            {'id': 28, 'name': 'Anime: ALL'},
-          ]
-        },
-        {'label': 'Other', 'value': [
-            {'id': 49, 'name': 'Other: Audio Books'},
-            {'id': 33, 'name': 'Other: Emulation'},
-            {'id': 34, 'name': 'Other: PPC/PDA'},
-            {'id': 26, 'name': 'Other: Radio'},
-            {'id': 36, 'name': 'Other: E-Books'},
-            {'id': 37, 'name': 'Other: Images'},
-            {'id': 38, 'name': 'Other: Mobile Phone'},
-            {'id': 39, 'name': 'Other: Extra Pars/Fills'},
-            {'id': 40, 'name': 'Other: Other'},
-          ]
-        },
-    ]
+    for cat in result['caps']['categories']['category']:
+        category = {'label': cat['@name'], 'id': cat['@id']}
+        category['value'] = [{'name': x['@name'], 'id': x['@id']} for x in cat['subcat']]
+
+        for subcat in category['value']:
+            subcat['name'] = '%s: %s' % (category['label'], subcat['name'])
+        categories.append(category)
+
+    return categories
+
+
+def get_newznab_sites():
+    try:
+        newznab_sites = NewznabSite.query.order_by(NewznabSite.id)
+    except Exception as e:
+        newznab_sites = []
+        logger.log('SEARCH :: Failed to get newznab sites')
+        logger.log(e, 'DEBUG')
+
+    return newznab_sites
 
 
 @app.route('/xhr/search/')
 @app.route('/xhr/search/<site>')
-def xhr_search(site=None):
+@requires_auth
+def xhr_search(site=1):
     if get_setting_value('search') == '0':
         logger.log('SEARCH :: Search fature not enabled, please enable it on the top right corner menu', 'INFO')
         return ''
 
-    if site == 'nzbmatrix':
-        categories = cat_nzbmatrix
-    elif site == 'nzb.su':
-        categories = cat_newznab
-    else:
-        # defaulting to nzbmatrix for now
-        site = 'nzbmatrix'
-        categories = cat_nzbmatrix
+    site = int(site)
+    newznab = NewznabSite.query.filter(NewznabSite.id == site).first()
+    categories = cat_newznab(newznab.url)
 
     return render_template('search.html',
         site=site,
+        newznab_sites=get_newznab_sites(),
         categories=categories,
+        category=0,
+        maxage=0
     )
 
 
-@app.route('/search/nzbmatrix/<item>/')
-@app.route('/search/nzbmatrix/<item>/<cat>')
-def nzb_matrix(item, cat=None):
-    API = get_setting_value('nzb_matrix_API')
-    USERNAME = get_setting_value('nzb_matrix_user')
+@app.route('/search/<site>/<category>/<maxage>/')
+@app.route('/search/<site>/<category>/<maxage>/<term>/')
+@requires_auth
+def get_search_results(site, category='0', maxage='0', term=''):
+        return newznab(site=site, category=category, maxage=maxage, term=term)
 
-    if not API or not USERNAME:
-        logger.log('SEARCH :: NZBMatrix API or USERNAME missing', 'DEBUG')
-        return jsonify({'error': "Missing NZBMatrix details"})
 
-    nzb = Matrix(username=USERNAME, apiKey=API)
+def newznab(site, category, maxage, term, mobile=False):
+    site = int(site)
+    newznab = NewznabSite.query.filter(NewznabSite.id == site).first()
 
-    if item is not '':
-        if cat:
-            logger.log('SEARCH :: NZBMatrix :: Searching for "%s" in category: %s' % (item, cat), 'INFO')
-            result = nzb.Search(query=item, catId=cat)
+    url = newznab.url
+    apikey = newznab.apikey
+    categories = cat_newznab(url)
+
+    try:
+        url += '/api?t=search&o=xml&apikey=%s&maxage=%s' % (apikey, maxage)
+        if category != '0':
+            url += '&cat=%s' % category
+        if term:
+            url += '&q=%s' % urllib.quote(term)
+
+        logger.log('SEARCH :: %s :: Searching for "%s" in category: %s' % (site, term, category), 'INFO')
+        result = xmltodict.parse(urllib.urlopen(url).read())['rss']['channel']
+
+        if 'item' in result:
+            result = result['item']
         else:
-            logger.log('SEARCH :: NZBMatrix :: Searching for "%s" in all categories' % (item), 'INFO')
-            result = nzb.Search(item)
+            result = []
+            logger.log('SEARCH :: No results found', 'INFO')
 
-    if result.get('error'):
-        result = None
+    except Exception as e:
+        logger.log(e, 'DEBUG')
+        result = []
 
-    return render_template('search-nzbmatrix.html',
-        site='nzbmatrix',
-        results=result,
-        item=item,
-        categories=cat_nzbmatrix,
+    def parse_item(item):
+        if isinstance(item, dict):
+            for attr in item['newznab:attr']:
+                if attr['@name'] == 'size':
+                    size = convert_bytes(attr['@value'])
+
+            a = {
+                'nzblink': item['link'],
+                'details': item['guid']['#text'],
+                'title': item['title'].decode('utf-8'),
+                'category': item['category'],
+                'size': size
+            }
+
+        return a
+
+    if isinstance(result, dict):
+        results = [parse_item(result)]
+    else:
+        results = [parse_item(x) for x in result]
+
+    if mobile:
+        return results
+
+    return render_template('search-results.html',
+        site=site,
+        results=results,
+        term=term,
+        categories=categories,
+        category=category,
+        maxage=int(maxage),
+        newznab_sites=get_newznab_sites()
     )
 
 
-@app.route('/search/nzb.su/<item>/')
-@app.route('/search/nzb.su/<item>/<cat>')
-def nzb_su(item, cat=None):
-    API = get_setting_value('nzb_su_API')
+@app.route('/search/newznab_dialog/')
+@app.route('/search/newznab_dialog/<newznab_id>')
+@requires_auth
+def newznab_dialog(newznab_id=None, newznab=None):
+    if newznab_id:
+        try:
+            newznab = NewznabSite.query.filter(NewznabSite.id == newznab_id).first()
+        except Exception as e:
+            logger.log('SEARCH :: Could not find Newznab site id: %s' % newznab_id, 'ERROR')
+            logger.log(e, 'DEBUG')
 
-    if not API:
-        logger.log('SEARCH :: NZB.su API missing', 'DEBUG')
-        return jsonify({'error': "Missing NZB.su API"})
+    return render_template('dialogs/add_edit_newznab_dialog.html',
+        newznab=newznab,
+    )
 
-    nzb = nzbsu(apiKey=API)
 
-    if item is not '':
-        if cat:
-            logger.log('SEARCH :: NZB.su :: Searching for "%s" in category: %s' % (item, cat), 'INFO')
-            result = nzb.Search(query=item, catId=cat)
-        else:
-            logger.log('SEARCH :: NZB.su :: Searching for "%s" in all categories' % (item), 'INFO')
-            result = nzb.Search(item)
+@app.route('/search/add_edit_newznab/', methods=['POST'])
+@requires_auth
+def add_edit_newznab():
+    name = request.form['name']
+    url = request.form['url']
+    apikey = request.form['apikey']
 
-        for x in result['channel']['item']:
-            x['link'] = urllib.quote(x['link'])
+    if url.endswith('/'):
+        url = url[:-1]
 
-        logger.log('SEARCH :: NZB.su :: Found %i results for %s' % (len(result['channel']['item']), item), 'INFO')
+    if not name:
+        return jsonify(error=True)
+    if not apikey:
+        return jsonify(error=True)
+    if not url:
+        return jsonify(error=True)
+
+    if 'newznab_id' in request.form:
+        logger.log('SEARCH :: Editing Newznab site %s' % request.form['newznab_id'], 'INFO')
+        newznab = NewznabSite.query.filter(NewznabSite.id == request.form['newznab_id']).first()
+        newznab.name = name
+        newznab.url = url
+        newznab.apikey = apikey
 
     else:
-        result = ''
+        logger.log('SEARCH :: Adding new Newznab site', 'INFO')
+        newznab = NewznabSite(
+            name=name,
+            url=url,
+            apikey=apikey
+        )
 
-    return render_template('search-nzbsu.html',
-        site='nzb.su',
-        results=result['channel']['item'],
-        item=item,
-        categories=cat_newznab,
-    )
+    try:
+        db_session.add(newznab)
+        db_session.commit()
+
+    except Exception as e:
+        logger.log(e, 'DEBUG')
+        return jsonify(error=True)
+
+    return xhr_search()
+
+
+@app.route('/search/delete_newznab/<newznab_id>/')
+@requires_auth
+def delete_newznab(newznab_id):
+    try:
+        newznab = NewznabSite.query.filter(NewznabSite.id == newznab_id).first()
+        db_session.delete(newznab)
+        db_session.commit()
+
+    except:
+        return jsonify(error=True)
+
+    return xhr_search()

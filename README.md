@@ -2,7 +2,7 @@
 
 * **Author**: [Bradley Abrahams](https://github.com/mrkipling)
 
-* **Main collaborator**: [Gustavo Hoirisch](https://github.com/gugahoi)
+* **Main collaborators**: [Gustavo Hoirisch](https://github.com/gugahoi) and [David Gray](https://github.com/N3MIS15)
 
 ##What is Maraschino?
 
@@ -54,6 +54,10 @@ In addition, there's also a thread on the [XBMC forums](http://forum.xbmc.org/sh
 * Customisable from within the application itself - choose how many columns you want, add new modules, rearrange them using drag-and-drop, and modify their settings without touching any settings files!
 
 Uses Flask and some other awesome technologies (SQL-Alchemy, LESS CSS) but you don't need to know about that if you don't want to.
+
+##What license is it released under?
+
+It is released under the MIT License, [which can be found here](https://github.com/mrkipling/maraschino/blob/master/LICENSE).
 
 ##Why is it called Maraschino?
 

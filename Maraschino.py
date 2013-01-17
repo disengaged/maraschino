@@ -1,31 +1,49 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""This is the main executable of Maraschino. It parses the command line arguments, does init and calls the start function of Maraschino."""
+
 import sys
 import os
 
-rundir = os.path.dirname(os.path.abspath(__file__))
 
-try:
-    frozen = sys.frozen
+# Check if frozen by py2exe
+def check_frozen():
+    return hasattr(sys, 'frozen')
 
-except AttributeError:
-    frozen = False
 
-# Define path based on frozen state
-if frozen:
-    path_base = os.environ['_MEIPASS2']
-    rundir = os.path.dirname(sys.executable)
+def get_rundir():
+    if check_frozen():
+        return os.path.abspath(unicode(sys.executable, sys.getfilesystemencoding( )))
 
-else:
-    path_base = rundir
+    return os.path.abspath(__file__)[:-13]
+
+# Set the rundir
+rundir = get_rundir()
 
 # Include paths
-sys.path.insert(0, path_base)
-sys.path.insert(0, os.path.join(path_base, 'lib'))
+sys.path.insert(0, rundir)
+sys.path.insert(0, os.path.join(rundir, 'lib'))
 
+# Create Flask instance
 from flask import Flask
 app = Flask(__name__)
 
+# If frozen, we need define static and template paths
+if check_frozen():
+    app.root_path = rundir
+    app.static_path = '/static'
+    app.add_url_rule(
+        app.static_path + '/<path:filename>',
+        endpoint='static',
+        view_func=app.send_static_file
+    )
+
+    from jinja2 import FileSystemLoader
+    app.jinja_loader = FileSystemLoader(os.path.join(rundir, 'templates'))
+
 
 def import_modules():
+    """All modules that are available in Maraschino are at this point imported."""
     import modules.applications
     import modules.controls
     import modules.couchpotato
@@ -39,6 +57,7 @@ def import_modules():
     import modules.recently_added
     import modules.remote
     import modules.sabnzbd
+    import modules.script_launcher
     import modules.search
     import modules.sickbeard
     import modules.trakt
@@ -53,16 +72,19 @@ def import_modules():
 
 @app.teardown_request
 def shutdown_session(exception=None):
+    """This function is called as soon as a session is shutdown and makes sure, that the db session is also removed."""
     from maraschino.database import db_session
     db_session.remove()
 
 import maraschino
 
-
 def main():
+    """Main function that is called at the startup of Maraschino."""
     from optparse import OptionParser
+
     p = OptionParser()
 
+    # define command line options
     p.add_option('-p', '--port',
                  dest='port',
                  default=None,
@@ -90,16 +112,29 @@ def main():
                  help='Custom database file location')
     p.add_option('--webroot',
                  dest='webroot',
-                 help='web root for Maraschino')
+                 help='Web root for Maraschino')
     p.add_option('--host',
                  dest='host',
-                 help='web host for Maraschino')
+                 help='Web host for Maraschino')
     p.add_option('--kiosk',
                  dest='kiosk',
                  action='store_true',
                  help='Disable settings in the UI')
+    p.add_option('--datadir',
+                 dest='datadir',
+                 help='Write program data to custom location')
+    p.add_option('--noupdate',
+                 action="store_true",
+                 dest='noupdate',
+                 help='Disable the internal updater')
 
+    # parse command line for defined options
     options, args = p.parse_args()
+
+    if options.datadir:
+        data_dir = options.datadir
+    else:
+        data_dir = rundir
 
     if options.daemon:
         maraschino.DAEMON = True
@@ -126,7 +161,7 @@ def main():
     if options.database:
         DATABASE = options.database
     else:
-        DATABASE = os.path.join(rundir, 'maraschino.db')
+        DATABASE = os.path.join(data_dir, 'maraschino.db')
 
     if options.webroot:
         maraschino.WEBROOT = options.webroot
@@ -137,7 +172,11 @@ def main():
     if options.kiosk:
         maraschino.KIOSK = True
 
+    if options.noupdate:
+        maraschino.UPDATER = False
+
     maraschino.RUNDIR = rundir
+    maraschino.DATA_DIR = data_dir
     maraschino.FULL_PATH = os.path.join(rundir, 'Maraschino.py')
     maraschino.ARGS = sys.argv[1:]
     maraschino.PORT = PORT
@@ -145,10 +184,11 @@ def main():
 
     maraschino.initialize()
 
-    import_modules()
-
     if maraschino.PIDFILE or maraschino.DAEMON:
         maraschino.daemonize()
+
+    import_modules()
+    maraschino.init_updater()
 
     maraschino.start()
 

@@ -3,7 +3,17 @@
 {% block content %}
 
 <ul data-role="listview">
-  <li><a href="/mobile/recent_episodes">Recently added episodes</a></li>
+    {% if xbmc %}<li><a href="{{ url_for('xbmc') }}">XBMC</a></li>{% endif %}
+
+    {% for module in available_modules %}
+        {% if 'sickbeard' in module.name %}<li><a href="{{ url_for('sickbeard') }}">Sickbeard</a></li>{% endif %}
+        {% if 'couchpotato' in module.name %}<li><a href="{{ url_for('couchpotato') }}">CouchPotato</a></li>{% endif %}
+        {% if 'headphones' in module.name %}<li><a href="{{ url_for('headphones_wanted') }}">Headphones</a></li>{% endif %}
+        {% if 'sabnzbd' in module.name %}<li><a href="{{ url_for('sabnzbd') }}">SabNZBd+</a></li>{% endif %}
+        {% if 'traktplus' in module.name %}<li><a href="{{ url_for('mobile_trakt') }}">Trakt</a></li>{% endif %}
+    {% endfor %}
+
+    {% if search %}<li><a href="{{ url_for('search') }}">Search</a></li>{% endif %}
 </ul>
 
 {% endblock %}
