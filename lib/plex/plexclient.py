@@ -76,8 +76,13 @@ class PLEXLibrary(object):
         root = self.plexgetxml(url)
         
         for node in root:
+            watched = '0'
+            if node.get('leafCount') == node.get('viewedLeafCount'):
+                watched = '1'
+                
             TVItems.append({'studio':node.get('studio'),'title':node.get('title'),'thumbnail':node.get('thumb'),'art':{'banner':node.get('banner')}, 
-                            'label':node.get('title'),'premiered':node.get('originallyAvailableAt'),'tvshowid':node.get('ratingKey')})
+                            'label':node.get('title'),'premiered':node.get('originallyAvailableAt'),'tvshowid':node.get('ratingKey'),
+                            'playcount':watched})
         return TVItems
 
     def getTVSeasons (self, tvshowid):

@@ -494,7 +494,6 @@ def xhr_xbmc_library_media(media_type=None):
         if (server_type()=="XBMC"):
             mediaplayer = jsonrpclib.Server(server_api_address())
         elif (server_type()=="PLEX"):
-            logger.log("TV Show ID %s" % get_setting_value('plex_tvlib_id'), 'INFO')
             mediaplayer=PLEXLibrary(server_address(), get_setting_value('plex_movielib_id'), get_setting_value('plex_tvlib_id'), get_setting_value('plex_musiclib_id'))
         #xbmc = jsonrpclib.Server(server_api_address())
         template = 'library/media.html'
@@ -862,7 +861,10 @@ def xbmc_get_tvshows(mediaplayer):
         tvshows = mediaplayer.getTVShows()
 
     if get_setting_value('xbmc_tvshows_hide_watched') == '1':
-        tvshows = [x for x in tvshows if not x['playcount']] # This doesnt work for Plex...
+        if (server_type() == "XBMC"):
+            tvshows = [x for x in tvshows if not x['playcount']]
+        elif(server_type() == "PLEX"):
+            tvshows = [x for x in tvshows if not x['playcount'] == '1']
 
     return tvshows
 
