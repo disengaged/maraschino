@@ -869,11 +869,11 @@ def xbmc_get_tvshows(mediaplayer):
     return tvshows
 
 
-def xbmc_get_seasons(mediaplayer, tvshowid):
+def xbmc_get_seasons(mediaserver, tvshowid):
     logger.log('LIBRARY :: Retrieving seasons for tvshowid: %s' % tvshowid, 'INFO')
 
     if (server_type() == "XBMC"):
-        version = mediaplayer.Application.GetProperties(properties=['version'])['version']['major']
+        version = mediaserver.Application.GetProperties(properties=['version'])['version']['major']
         params = {'sort': xbmc_sort('seasons')}
 
         if version < 12 and params['sort']['method'] in ['rating', 'playcount', 'random']: #Eden
@@ -884,40 +884,53 @@ def xbmc_get_seasons(mediaplayer, tvshowid):
         params['tvshowid'] = tvshowid
         params['properties'] = ['playcount', 'showtitle', 'tvshowid', 'season', 'thumbnail', 'episode']
 
-        seasons = mediaplayer.VideoLibrary.GetSeasons(**params)['seasons']
+        seasons = mediaserver.VideoLibrary.GetSeasons(**params)['seasons']
 
+    elif (server_type() == "PLEX"):
+        seasons = mediaserver.getTVSeasons(tvshowid)
         if get_setting_value('xbmc_seasons_hide_watched') == '1':
-            seasons = [x for x in seasons if not x['playcount']]
+            seasons = [x for x in seasons if not x['watched'] == '1']
 
+
+    if get_setting_value('xbmc_seasons_hide_watched') == '1':
+        if (server_type() == "XBMC"):
+            seasons = [x for x in seasons if not x['playcount']]
+        elif (server_type() == "PLEX"):
+            seasons = [x for x in seasons if not x['watched'] == '1']
+
+    if (server_type() == "XBMC"): # For now only XBMC only...Plex might pick this up eventually
         #Add episode playcounts to seasons
         for season in seasons:
-            episodes = mediaplayer.VideoLibrary.GetEpisodes(
+            episodes = mediaserver.VideoLibrary.GetEpisodes(
                 tvshowid=tvshowid,
                 season=season['season'],
                 properties=['playcount']
             )['episodes']
             season['unwatched'] = len([x for x in episodes if not x['playcount']])
-    elif (server_type() == "PLEX"):
-        seasons = mediaplayer.getTVSeasons(tvshowid)
 
     return seasons
 
 
-def xbmc_get_episodes(xbmc, tvshowid, season):
+def xbmc_get_episodes(mediaserver, tvshowid, season):
     logger.log('LIBRARY :: Retrieving episodes for tvshowid: %s season: %s' % (tvshowid, season), 'INFO')
-    version = xbmc.Application.GetProperties(properties=['version'])['version']['major']
-    params = {'sort': xbmc_sort('episodes')}
 
-    if version < 12 and params['sort']['method'] in ['rating', 'playcount', 'random']: #Eden
-        logger.log('LIBRARY :: Sort method "%s" is not supported in XBMC Eden. Reverting to "episode"' % params['sort']['method'], 'INFO')
-        change_sort('episodes', 'episode')
-        params['sort'] = xbmc_sort('episodes')
+    if (server_type() == "XBMC"):
+        version = mediaserver.Application.GetProperties(properties=['version'])['version']['major']
+        params = {'sort': xbmc_sort('episodes')}
 
-    params['tvshowid'] = tvshowid
-    params['season'] = season
-    params['properties'] = ['playcount', 'season', 'episode', 'tvshowid', 'showtitle', 'thumbnail', 'firstaired', 'rating']
+        if version < 12 and params['sort']['method'] in ['rating', 'playcount', 'random']: #Eden
+            logger.log('LIBRARY :: Sort method "%s" is not supported in XBMC Eden. Reverting to "episode"' % params['sort']['method'], 'INFO')
+            change_sort('episodes', 'episode')
+            params['sort'] = xbmc_sort('episodes')
 
-    episodes = xbmc.VideoLibrary.GetEpisodes(**params)['episodes']
+        params['tvshowid'] = tvshowid
+        params['season'] = season
+        params['properties'] = ['playcount', 'season', 'episode', 'tvshowid', 'showtitle', 'thumbnail', 'firstaired', 'rating']
+
+        episodes = mediaserver.VideoLibrary.GetEpisodes(**params)['episodes']
+
+    elif (server_type() == "PLEX"):
+        episodes = mediaserver.getTVEpisodes(tvshowid, season)
 
     if get_setting_value('xbmc_episodes_hide_watched') == '1':
         episodes = [x for x in episodes if not x['playcount']]

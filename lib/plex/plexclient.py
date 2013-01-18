@@ -79,7 +79,7 @@ class PLEXLibrary(object):
             watched = '0'
             if node.get('leafCount') == node.get('viewedLeafCount'):
                 watched = '1'
-                
+
             TVItems.append({'studio':node.get('studio'),'title':node.get('title'),'thumbnail':node.get('thumb'),'art':{'banner':node.get('banner')}, 
                             'label':node.get('title'),'premiered':node.get('originallyAvailableAt'),'tvshowid':node.get('ratingKey'),
                             'playcount':watched})
@@ -103,11 +103,35 @@ class PLEXLibrary(object):
         root = self.plexgetxml(url)
         
         for node in root:
-            TVItems.append({'label':node.get('title'),'showtitle':showtitle,'thumbnail':node.get('thumb'),'episode':node.get('leafCount'),
-                            'unwatched':str(int(node.get('leafCount')) - int(node.get('viewedLeafCount')))})
+            watched = '0'
+            if node.get('leafCount') == node.get('viewedLeafCount'):
+                watched = '1'
+
+            TVItems.append({'tvshowid':tvshowid,'season':node.get('ratingKey'),'label':node.get('title'),'showtitle':showtitle,'thumbnail':node.get('thumb'),'episode':node.get('leafCount'),
+                            'unwatched':str(int(node.get('leafCount')) - int(node.get('viewedLeafCount'))),'watched':watched})
         return TVItems
 
+    def getTVEpisodes (self, tvshowid, season):
+        '''
+        getTVEpisodes returns the TV episodes from the library
+        '''
+        #Grab top level show info
+        url="/library/metadata/"+str(tvshowid)
+        root = self.plexgetxml(url)
 
+        showtitle = ""
+
+        for node in root:
+            showtitle = node.get('title')
+
+        TVItems=[]
+        url="/library/metadata/"+str(season)+"/children"
+        root = self.plexgetxml(url)
+        
+        for node in root:
+            TVItems.append({'tvshowid':tvshowid,'season':season,'label':node.get('title'),'showtitle':showtitle,'thumbnail':node.get('thumb'),'episode':node.get('leafCount'),
+                            'playcount':node.get('viewCount')})
+        return TVItems
 
     def getrecentlyaddedepisodes (self):
         '''
