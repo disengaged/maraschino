@@ -22,7 +22,7 @@ def xhr_notify():
         prepend_path = False,
     )
 
-    return render_template('notify_dialog.html',
+    return render_template('dialogs/notify_dialog.html',
     label = label,
     hostname = hostname,
     icons = icons,

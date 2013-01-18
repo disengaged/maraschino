@@ -186,7 +186,7 @@ def xbmc_image(url, label='default'):
 
         return '%s/xhr/xbmc_image/%s/frodo/?path=%s' % (maraschino.WEBROOT, label, url)
     elif url.startswith('/library/'): #plex
-        return '%s/xhr/xbmc_image/plex%s' % (maraschino.WEBROOT, url)
+        return '%s/xhr/xbmc_image/%s/plex/?path=%s' % (maraschino.WEBROOT, label, url)
     else:
         return url
 
@@ -223,7 +223,7 @@ def xbmc_proxy(version, label):
     elif version == 'frodo':
         url = '%s/image/image://%s' % (xbmc_url, urllib.quote(url.encode('utf-8'), ''))
     elif version == 'plex':
-        url = '%s/%s' % (server_address(), url)
+        url = '%s%s' % (server_address(), url)
 
     img = StringIO.StringIO(urllib.urlopen(url).read())
     return send_file(img, mimetype='image/jpeg')

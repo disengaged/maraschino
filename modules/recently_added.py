@@ -210,7 +210,7 @@ def get_recently_added_episodes(mediaplayer, episode_offset=0, mobile=False):
         total_episodes = len(recently_added_episodes)
         recently_added_episodes = recently_added_episodes[episode_offset:num_recent_videos + episode_offset]
 
-    return [recently_added_episodes, total_episodes, using_db]
+    return [recently_added_episodes, total_episodes, using_db]#
 
 
 def get_recently_added_movies(mediaserver, movie_offset=0, mobile=False):
@@ -272,7 +272,7 @@ def get_recently_added_albums(mediaplayer, album_offset=0, mobile=False):
     num_recent_albums = get_num_recent_albums()
     xbmc_label = get_recent_xbmc_label('recently_added_albums_server')
     using_db = False
-
+    
     try:
         if (server_type()=="XBMC"):
             recently_added_albums = mediaplayer.AudioLibrary.GetRecentlyAddedAlbums(properties = ['title', 'year', 'rating', 'artist', 'thumbnail'])['albums']
@@ -364,7 +364,7 @@ def recent_image_file(server, media_type, id):
         system = 'win'
     else:
         system = 'unix'
-        filepath = filepath[1:]
+        #filepath = filepath[1:]
 
     return ['%s/cache/image_file/%s/' % (WEBROOT, system), filepath]
 
