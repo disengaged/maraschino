@@ -722,16 +722,19 @@ def xhr_xbmc_library_media(media_type=None):
     )
 
 
-def xbmc_get_movies(xbmc):
+def xbmc_get_movies(mediaserver):
     logger.log('LIBRARY :: Retrieving movies', 'INFO')
 
     sort = xbmc_sort('movies')
     properties = ['playcount', 'thumbnail', 'year', 'rating', 'set']
 
-    movies = xbmc.VideoLibrary.GetMovies(sort=sort, properties=properties)['movies']
+    if (server_type() == "XBMC"):
+        movies = mediaserver.VideoLibrary.GetMovies(sort=sort, properties=properties)['movies']
+    elif (server_type() == "PLEX"):
+        movies = mediaserver.getMovies()
 
     if get_setting_value('xbmc_movies_view_sets') == '1':
-        movies = xbmc_movies_with_sets(xbmc, movies)
+        movies = xbmc_movies_with_sets(mediaserver, movies)
 
     if get_setting_value('xbmc_movies_hide_watched') == '1':
         movies = [x for x in movies if not x['playcount']]

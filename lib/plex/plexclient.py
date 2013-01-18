@@ -133,6 +133,18 @@ class PLEXLibrary(object):
                             'playcount':node.get('viewCount'),'firstaired':node.get('originallyAvailableAt')})
         return TVItems
 
+    def getMovies (self):
+        '''
+        getMovies returns the movies from the library
+        '''
+        Movies=[]
+        url="/library/sections/"+self.MovieLibrary+"/all"
+        root = self.plexgetxml(url)
+        
+        for node in root:
+            Movies.append({'label':node.get('title'),'year':node.get('year'),'thumbnail':node.get('thumb')})
+        return Movies
+
     def getrecentlyaddedepisodes (self):
         '''
         getrecentlyaddedepisodes returns the recently added TV episodes from the library
