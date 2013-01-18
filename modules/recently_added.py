@@ -1,7 +1,8 @@
-from flask import render_template
+from flask import render_template, render_template
 import jsonrpclib, ast, os
-from flask import Flask, render_template
-import jsonrpclib
+
+import urllib
+from plex.plexclient import PLEXLibrary
 
 from maraschino import app, logger, DATA_DIR, THREADS, HOST, PORT, WEBROOT
 from maraschino.noneditable import *
@@ -70,8 +71,15 @@ def render_recently_added_episodes(episode_offset=0):
     show_watched = get_setting_value('recently_added_watched_episodes') == '1'
     view_info = get_setting_value('recently_added_info') == '1'
 
-    xbmc = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_server'))
-    recently_added_episodes = get_recently_added_episodes(xbmc, episode_offset)
+    try:
+        if (server_type()=="XBMC"):
+            mediaplayer = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_server'))
+        elif (server_type()=="PLEX"):
+            mediaplayer=PLEXLibrary(server_address(),TVLibID=get_setting_value('plex_tvlib_id'))
+
+        recently_added_episodes = get_recently_added_episodes(mediaplayer, episode_offset)
+    except:
+        recently_added_episodes = []
 
     return render_template('recently_added/tv.html',
         recently_added_episodes = recently_added_episodes[0],
@@ -88,8 +96,15 @@ def render_recently_added_movies(movie_offset=0):
     show_watched = get_setting_value('recently_added_watched_movies') == '1'
     view_info = get_setting_value('recently_added_movies_info') == '1'
 
-    xbmc = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_movies_server'))
-    recently_added_movies = get_recently_added_movies(xbmc, movie_offset)
+    try:
+        if (server_type()=="XBMC"):
+            mediaplayer = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_movies_server'))
+        elif (server_type()=="PLEX"):
+            mediaplayer=PLEXLibrary(server_address(), MovieLibID=get_setting_value('plex_movielib_id'))
+
+        recently_added_movies = get_recently_added_movies(mediaplayer, movie_offset)
+    except:
+        recently_added_movies = []
 
     return render_template('recently_added/movies.html',
         recently_added_movies = recently_added_movies[0],
@@ -142,14 +157,18 @@ def get_num_recent_albums():
         return 3
 
 
-def get_recently_added_episodes(xbmc, episode_offset=0, mobile=False):
+def get_recently_added_episodes(mediaplayer, episode_offset=0, mobile=False):
     num_recent_videos = get_num_recent_episodes()
     xbmc_label = get_recent_xbmc_label('recently_added_server')
     total_episodes = 0
     using_db = False
 
     try:
-        recently_added_episodes = xbmc.VideoLibrary.GetRecentlyAddedEpisodes(properties = ['title', 'season', 'episode', 'showtitle', 'playcount', 'thumbnail', 'tvshowid'])['episodes']
+        if (server_type()=="XBMC"): 
+            recently_added_episodes = mediaplayer.VideoLibrary.GetRecentlyAddedEpisodes(properties = ['title', 'season', 'episode', 'showtitle', 'playcount', 'thumbnail', 'tvshowid'])['episodes']
+        elif (server_type()=="PLEX"):
+            recently_added_episodes = mediaplayer.getrecentlyaddedepisodes()
+
         recently_added_db_add(xbmc_label, 'episodes', recently_added_episodes)
 
         thumbs = [recent_image_file(xbmc_label, 'episodes', x['episodeid'])[1] for x in recently_added_episodes]
@@ -194,14 +213,18 @@ def get_recently_added_episodes(xbmc, episode_offset=0, mobile=False):
     return [recently_added_episodes, total_episodes, using_db]
 
 
-def get_recently_added_movies(xbmc, movie_offset=0, mobile=False):
+def get_recently_added_movies(mediaserver, movie_offset=0, mobile=False):
     num_recent_videos = get_num_recent_movies()
     xbmc_label = get_recent_xbmc_label('recently_added_movies_server')
     total_movies = 0
     using_db = False
 
     try:
-        recently_added_movies = xbmc.VideoLibrary.GetRecentlyAddedMovies(properties = ['title', 'year', 'rating', 'playcount', 'thumbnail'])['movies']
+        if (server_type()=="XBMC"):
+            recently_added_movies = mediaserver.VideoLibrary.GetRecentlyAddedMovies(properties = ['title', 'year', 'rating', 'playcount', 'thumbnail'])['movies']
+        elif (server_type()=="PLEX"):
+            recently_added_movies=mediaserver.getrecentlyaddedmovies()
+
         recently_added_db_add(xbmc_label, 'movies', recently_added_movies)
 
         thumbs = [recent_image_file(xbmc_label, 'movies', x['movieid'])[1] for x in recently_added_movies]
@@ -245,13 +268,17 @@ def get_recently_added_movies(xbmc, movie_offset=0, mobile=False):
 
     return [recently_added_movies, total_movies, using_db]
 
-def get_recently_added_albums(xbmc, album_offset=0, mobile=False):
+def get_recently_added_albums(mediaplayer, album_offset=0, mobile=False):
     num_recent_albums = get_num_recent_albums()
     xbmc_label = get_recent_xbmc_label('recently_added_albums_server')
     using_db = False
 
     try:
-        recently_added_albums = xbmc.AudioLibrary.GetRecentlyAddedAlbums(properties = ['title', 'year', 'rating', 'artist', 'thumbnail'])['albums']
+        if (server_type()=="XBMC"):
+            recently_added_albums = mediaplayer.AudioLibrary.GetRecentlyAddedAlbums(properties = ['title', 'year', 'rating', 'artist', 'thumbnail'])['albums']
+        elif (server_type()=="PLEX"):
+            recently_added_albums = mediaplayer.getrecentlyaddedalbums()
+
         for album in recently_added_albums:
             if 'artist' in album and isinstance(album['artist'], list): #Frodo
                 album['artist'] = " / ".join(album['artist'])
