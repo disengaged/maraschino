@@ -67,6 +67,43 @@ class PLEXLibrary(object):
                     'version':node.get('version'),'uniqueid':node.get('machineIdentifier')})
         return Clients
     
+    def getTVShows (self):
+        '''
+        getTVShows returns the TV shows from the library
+        '''
+        TVItems=[]
+        url="/library/sections/"+self.TVLibrary+"/all"
+        root = self.plexgetxml(url)
+        
+        for node in root:
+            TVItems.append({'studio':node.get('studio'),'title':node.get('title'),'thumbnail':node.get('thumb'),'art':{'banner':node.get('banner')}, 
+                            'label':node.get('title'),'premiered':node.get('originallyAvailableAt'),'tvshowid':node.get('ratingKey')})
+        return TVItems
+
+    def getTVSeasons (self, tvshowid):
+        '''
+        getTVSeasons returns the TV seasons from the library
+        '''
+        #Grab top level show info
+        url="/library/metadata/"+str(tvshowid)
+        root = self.plexgetxml(url)
+
+        showtitle = ""
+
+        for node in root:
+            showtitle = node.get('title')
+
+        TVItems=[]
+        url="/library/metadata/"+str(tvshowid)+"/children"
+        root = self.plexgetxml(url)
+        
+        for node in root:
+            TVItems.append({'label':node.get('title'),'showtitle':showtitle,'thumbnail':node.get('thumb'),'episode':node.get('leafCount'),
+                            'unwatched':str(int(node.get('leafCount')) - int(node.get('viewedLeafCount')))})
+        return TVItems
+
+
+
     def getrecentlyaddedepisodes (self):
         '''
         getrecentlyaddedepisodes returns the recently added TV episodes from the library

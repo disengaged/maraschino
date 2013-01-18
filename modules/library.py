@@ -1,10 +1,11 @@
 from flask import render_template, jsonify, request, json
-from maraschino.noneditable import server_api_address
+from maraschino.noneditable import *
 from maraschino.models import Setting
 from maraschino.database import db_session
 from maraschino.tools import requires_auth, get_setting, get_setting_value, natural_sort, format_seconds
 from maraschino import app, logger
 import jsonrpclib, random, os
+from plex.plexclient import PLEXLibrary
 
 back_id = {}
 file_sources = {}
@@ -480,8 +481,8 @@ def xhr_xbmc_library_media(media_type=None):
     library = None
 
     if not server_api_address():
-        logger.log('LIBRARY :: No XBMC server defined', 'ERROR')
-        return render_xbmc_library(message="You need to configure XBMC server settings first.")
+        logger.log('LIBRARY :: No Media server defined', 'ERROR')
+        return render_xbmc_library(message="You need to configure Media server settings first.")
 
     try:
         #Reset back positions when rendering home
@@ -490,7 +491,12 @@ def xhr_xbmc_library_media(media_type=None):
 
             return render_xbmc_library()
 
-        xbmc = jsonrpclib.Server(server_api_address())
+        if (server_type()=="XBMC"):
+            mediaplayer = jsonrpclib.Server(server_api_address())
+        elif (server_type()=="PLEX"):
+            logger.log("TV Show ID %s" % get_setting_value('plex_tvlib_id'), 'INFO')
+            mediaplayer=PLEXLibrary(server_address(), get_setting_value('plex_movielib_id'), get_setting_value('plex_tvlib_id'), get_setting_value('plex_musiclib_id'))
+        #xbmc = jsonrpclib.Server(server_api_address())
         template = 'library/media.html'
 
 
@@ -501,7 +507,7 @@ def xhr_xbmc_library_media(media_type=None):
             if 'movieid' in request.args: #Movie details
                 movieid = request.args['movieid']
                 back_id['movies'] = movieid
-                library = xbmc_get_details(xbmc, 'movie', int(movieid))
+                library = xbmc_get_details(mediaplayer, 'movie', int(movieid))
                 template = 'library/details.html'
                 title = '%s (%s)' % (library['label'], library['year'])
                 if 'setid' in request.args:
@@ -512,13 +518,13 @@ def xhr_xbmc_library_media(media_type=None):
             elif 'setid' in request.args: #Movie set
                 setid = request.args['setid']
                 back_id['movies'] = 'set' + setid
-                library = xbmc_get_moviesets(xbmc, int(setid))
+                library = xbmc_get_moviesets(mediaplayer, int(setid))
                 title = library[0]['set']
                 path = '/movies?setid=%s' % setid
                 back_path = '/movies'
 
             else:
-                library = xbmc_get_movies(xbmc)
+                library = xbmc_get_movies(mediaplayer)
                 title = 'Movies'
                 path = '/movies'
 
@@ -530,14 +536,14 @@ def xhr_xbmc_library_media(media_type=None):
             if 'tvshowid' in request.args: #TV show details
                 tvshowid = request.args['tvshowid']
                 back_id['tvshows'] = tvshowid
-                library = xbmc_get_details(xbmc, 'tvshow', int(tvshowid))
+                library = xbmc_get_details(mediaplayer, 'tvshow', int(tvshowid))
                 template = 'library/details.html'
                 title = library['label']
                 path = '/tvshows?tvshowid=%s' % tvshowid
                 back_path = '/tvshows'
 
             else:
-                library = xbmc_get_tvshows(xbmc)
+                library = xbmc_get_tvshows(mediaplayer)
                 title = 'TV Shows'
                 path = '/tvshows'
 
@@ -546,7 +552,7 @@ def xhr_xbmc_library_media(media_type=None):
             file_type = 'video'
             tvshowid = request.args['tvshowid']
             back_id['tvshows'] = tvshowid
-            library = xbmc_get_seasons(xbmc, int(tvshowid))
+            library = xbmc_get_seasons(mediaplayer, int(tvshowid))
             title = library[0]['showtitle']
             path = '/seasons?tvshowid=%s' % tvshowid
             back_path = '/tvshows'
@@ -563,13 +569,13 @@ def xhr_xbmc_library_media(media_type=None):
             if 'episodeid' in request.args: #Episode details
                 episodeid = request.args['episodeid']
                 back_id['episodes'] = episodeid
-                library = xbmc_get_details(xbmc, 'episode', int(episodeid))
+                library = xbmc_get_details(mediaplayer, 'episode', int(episodeid))
                 template = 'library/details.html'
                 title = library['label']
                 back_path = path
 
             else:
-                library = xbmc_get_episodes(xbmc, int(tvshowid), int(season))
+                library = xbmc_get_episodes(mediaplayer, int(tvshowid), int(season))
                 title = '%s - Season %s' % (library[0]['showtitle'], library[0]['season'])
                 back_path = '/seasons?tvshowid=%s' % tvshowid
 
@@ -581,13 +587,13 @@ def xhr_xbmc_library_media(media_type=None):
             if 'artistid' in request.args: #Artist details
                 artistid = request.args['artistid']
                 back_id['artists'] = artistid
-                library = xbmc_get_details(xbmc, 'artist', int(artistid))
+                library = xbmc_get_details(mediaplayer, 'artist', int(artistid))
                 template = 'library/details.html'
                 title = library['label']
                 back_path = '/artists'
 
             else:
-                library = xbmc_get_artists(xbmc)
+                library = xbmc_get_artists(mediaplayer)
                 title = 'Artists'
                 path = '/artists'
 
@@ -601,13 +607,13 @@ def xhr_xbmc_library_media(media_type=None):
             if 'albumid' in request.args: #Album details
                 albumid = request.args['albumid']
                 back_id['albums'] = albumid
-                library = xbmc_get_details(xbmc, 'album', int(albumid))
+                library = xbmc_get_details(mediaplayer, 'album', int(albumid))
                 template = 'library/details.html'
                 title = library['label']
                 back_path = path
 
             else:
-                library = xbmc_get_albums(xbmc, int(artistid))
+                library = xbmc_get_albums(mediaplayer, int(artistid))
                 title = library[0]['artist']
                 back_path = '/artists'
             
@@ -619,7 +625,7 @@ def xhr_xbmc_library_media(media_type=None):
             back_id['artists'] = artistid
             back_id['albums'] = albumid
 
-            library = xbmc_get_songs(xbmc, int(artistid), int(albumid))
+            library = xbmc_get_songs(mediaplayer, int(artistid), int(albumid))
             title = '%s (%s)' % (library[0]['album'], library[0]['year'])
             path = '/songs?artistid=%s&albumid=%s' % (artistid, albumid)
             back_path = '/albums?artistid=%s' % artistid
@@ -645,7 +651,7 @@ def xhr_xbmc_library_media(media_type=None):
                 file_type = 'audio'
                 title = 'Live Radio'
 
-            library = xbmc_get_channelgroups(xbmc, channeltype)
+            library = xbmc_get_channelgroups(mediaplayer, channeltype)
             path = '/channelgroups?type=%s' % channeltype
             back_path = '/pvr'
 
@@ -659,7 +665,7 @@ def xhr_xbmc_library_media(media_type=None):
 
             channelgroupid = request.args['channelgroupid']
 
-            library = xbmc_get_channels(xbmc, channeltype, int(channelgroupid))
+            library = xbmc_get_channels(mediaplayer, channeltype, int(channelgroupid))
             path = '/channels?type=%s&channelgroupid=%s' % (channeltype, channelgroupid)
             back_path = '/channelgroups?type=%s' % channeltype
             title = library[0]['grouplabel']
@@ -683,11 +689,11 @@ def xhr_xbmc_library_media(media_type=None):
                         if back_path.endswith('/') or back_path.endswith('\\'):
                             back_path = back_path[:-1]
 
-                    library = xbmc_get_file_path(xbmc, file_type, title)
+                    library = xbmc_get_file_path(mediaplayer, file_type, title)
 
                 else: #Sources
                     file_sources = {}
-                    library = xbmc_get_sources(xbmc, file_type)
+                    library = xbmc_get_sources(mediaplayer, file_type)
                     title = '%s Sources' % file_type.title()
                     path = '/files?files=%s' % file_type
                     back_path = '/files'
@@ -839,50 +845,58 @@ def xbmc_get_moviesets(xbmc, setid):
     return movies
 
 
-def xbmc_get_tvshows(xbmc):
+def xbmc_get_tvshows(mediaplayer):
     logger.log('LIBRARY :: Retrieving TV shows', 'INFO')
-    version = xbmc.Application.GetProperties(properties=['version'])['version']['major']
 
     sort = xbmc_sort('tvshows')
     properties = ['playcount', 'thumbnail', 'premiered', 'rating', 'file']
 
-    if version > 11: #Frodo
-        properties.append('art')
+    if (server_type() == "XBMC"):
+        version = mediaplayer.Application.GetProperties(properties=['version'])['version']['major']
 
-    tvshows = xbmc.VideoLibrary.GetTVShows(sort=sort, properties=properties)['tvshows']
+        if version > 11: #Frodo
+            properties.append('art')
+
+        tvshows = mediaplayer.VideoLibrary.GetTVShows(sort=sort, properties=properties)['tvshows']
+    elif (server_type() == "PLEX"):
+        tvshows = mediaplayer.getTVShows()
 
     if get_setting_value('xbmc_tvshows_hide_watched') == '1':
-        tvshows = [x for x in tvshows if not x['playcount']]
+        tvshows = [x for x in tvshows if not x['playcount']] # This doesnt work for Plex...
 
     return tvshows
 
 
-def xbmc_get_seasons(xbmc, tvshowid):
+def xbmc_get_seasons(mediaplayer, tvshowid):
     logger.log('LIBRARY :: Retrieving seasons for tvshowid: %s' % tvshowid, 'INFO')
-    version = xbmc.Application.GetProperties(properties=['version'])['version']['major']
-    params = {'sort': xbmc_sort('seasons')}
 
-    if version < 12 and params['sort']['method'] in ['rating', 'playcount', 'random']: #Eden
-        logger.log('LIBRARY :: Sort method "%s" is not supported in XBMC Eden. Reverting to "label"' % params['sort']['method'], 'INFO')
-        change_sort('seasons', 'label')
-        params['sort'] = xbmc_sort('seasons')
+    if (server_type() == "XBMC"):
+        version = mediaplayer.Application.GetProperties(properties=['version'])['version']['major']
+        params = {'sort': xbmc_sort('seasons')}
 
-    params['tvshowid'] = tvshowid
-    params['properties'] = ['playcount', 'showtitle', 'tvshowid', 'season', 'thumbnail', 'episode']
+        if version < 12 and params['sort']['method'] in ['rating', 'playcount', 'random']: #Eden
+            logger.log('LIBRARY :: Sort method "%s" is not supported in XBMC Eden. Reverting to "label"' % params['sort']['method'], 'INFO')
+            change_sort('seasons', 'label')
+            params['sort'] = xbmc_sort('seasons')
 
-    seasons = xbmc.VideoLibrary.GetSeasons(**params)['seasons']
+        params['tvshowid'] = tvshowid
+        params['properties'] = ['playcount', 'showtitle', 'tvshowid', 'season', 'thumbnail', 'episode']
 
-    if get_setting_value('xbmc_seasons_hide_watched') == '1':
-        seasons = [x for x in seasons if not x['playcount']]
+        seasons = mediaplayer.VideoLibrary.GetSeasons(**params)['seasons']
 
-    #Add episode playcounts to seasons
-    for season in seasons:
-        episodes = xbmc.VideoLibrary.GetEpisodes(
-            tvshowid=tvshowid,
-            season=season['season'],
-            properties=['playcount']
-        )['episodes']
-        season['unwatched'] = len([x for x in episodes if not x['playcount']])
+        if get_setting_value('xbmc_seasons_hide_watched') == '1':
+            seasons = [x for x in seasons if not x['playcount']]
+
+        #Add episode playcounts to seasons
+        for season in seasons:
+            episodes = mediaplayer.VideoLibrary.GetEpisodes(
+                tvshowid=tvshowid,
+                season=season['season'],
+                properties=['playcount']
+            )['episodes']
+            season['unwatched'] = len([x for x in episodes if not x['playcount']])
+    elif (server_type() == "PLEX"):
+        seasons = mediaplayer.getTVSeasons(tvshowid)
 
     return seasons
 
@@ -1040,28 +1054,31 @@ def xbmc_get_channels(xbmc, channeltype, channelgroupid):
     return channels
 
 
-def xbmc_get_details(xbmc, media_type, mediaid):
+def xbmc_get_details(mediaserver, media_type, mediaid):
     logger.log('LIBRARY :: Retrieving %s details for %sid: %s' % (media_type, media_type, mediaid), 'INFO')
 
     if media_type == 'movie':
         properties = ['title', 'rating', 'year', 'genre', 'plot', 'director', 'thumbnail', 'trailer', 'playcount', 'resume']
-        details = xbmc.VideoLibrary.GetMovieDetails(movieid=mediaid, properties=properties)['moviedetails']
+        details = mediaserver.VideoLibrary.GetMovieDetails(movieid=mediaid, properties=properties)['moviedetails']
 
     elif media_type == 'tvshow':
-        properties = ['title', 'rating', 'year', 'genre', 'plot', 'premiered', 'thumbnail', 'playcount', 'studio']
-        details = xbmc.VideoLibrary.GetTVShowDetails(tvshowid=mediaid, properties=properties)['tvshowdetails']
+        if (server_type() == "XBMC"):
+            properties = ['title', 'rating', 'year', 'genre', 'plot', 'premiered', 'thumbnail', 'playcount', 'studio']
+            details = mediaserver.VideoLibrary.GetTVShowDetails(tvshowid=mediaid, properties=properties)['tvshowdetails']
+        elif (server_type() == "PLEX"):
+            details = mediaserver.getTVSeasons(mediaid)
 
     elif media_type == 'episode':
         properties = ['season', 'tvshowid', 'title', 'rating', 'plot', 'thumbnail', 'playcount', 'firstaired', 'resume']
-        details = xbmc.VideoLibrary.GetEpisodeDetails(episodeid=mediaid, properties=properties)['episodedetails']
+        details = mediaserver.VideoLibrary.GetEpisodeDetails(episodeid=mediaid, properties=properties)['episodedetails']
 
     elif media_type == 'artist':
         properties = ['description', 'thumbnail', 'genre']
-        details = xbmc.AudioLibrary.GetArtistDetails(artistid=mediaid, properties=properties)['artistdetails']
+        details = mediaserver.AudioLibrary.GetArtistDetails(artistid=mediaid, properties=properties)['artistdetails']
 
     elif media_type == 'album':
         properties = ['title', 'artist', 'year', 'genre', 'description', 'albumlabel', 'rating', 'thumbnail']
-        details = xbmc.AudioLibrary.GetAlbumDetails(albumid=mediaid, properties=properties)['albumdetails']
+        details = mediaserver.AudioLibrary.GetAlbumDetails(albumid=mediaid, properties=properties)['albumdetails']
 
     for k in details:
         if isinstance(details[k], list):
