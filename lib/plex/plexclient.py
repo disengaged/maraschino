@@ -101,7 +101,8 @@ class PLEXLibrary(object):
         root = self.plexgetxml("/library/sections/"+self.MusicLibrary+"/recentlyAdded")
         for node in root:
             MusicItems.append({'title':node.get('title'),'year':node.get('year'),'rating':node.get('rating'),
-                               'artist':node.get('artist'),'thumbnail':node.get('thumb')})
+                               'artist':node.get('artist'),'thumbnail':node.get('thumb'),
+                               'albumid':node.get('ratingKey')})
         return MusicItems
     
     def playfile (self,filetoplay,player,mediatype='episode'):
