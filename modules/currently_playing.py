@@ -49,7 +49,7 @@ def xhr_currently_playing():
                 raise Exception
     except:
         return jsonify({ 'playing': False })
-
+    
     return render_template('currently_playing.html',
         servertype=server_type(),
         currently_playing = currently_playing,

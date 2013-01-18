@@ -221,7 +221,8 @@ class PLEXClient(object):
                 curplay['episode']=line[8:].strip()
             elif line.startswith("Thumb"):
                 thumb=line[6:].strip()
-                curplay['thumbnail']='http://'+self.server+":"+self.port+"/vfs/"+thumb
+                #curplay['thumbnail']='http://'+self.server+":"+self.port+"/vfs/"+thumb
+                curplay['thumbnail']=thumb
                 curplay['fanart']='http://'+self.server+":"+self.port+"/vfs/"+thumb[:-4]
             elif line.startswith("Time"):
                 time=line[5:].strip()
