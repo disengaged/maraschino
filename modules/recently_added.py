@@ -120,10 +120,15 @@ def render_recently_added_albums(album_offset=0):
     compact_view = get_setting_value('recently_added_albums_compact') == '1'
     view_info = get_setting_value('recently_added_albums_info') == '1'
 
+    try:
+        if (server_type()=="XBMC"):
+            mediaplayer = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_albums_server'))
+        elif (server_type()=="PLEX"):
+            mediaplayer=PLEXLibrary(server_address(), MusicLibID=get_setting_value('plex_musiclib_id'))
 
-    xbmc = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_albums_server'))
-    recently_added_albums = get_recently_added_albums(xbmc, album_offset)
-
+        recently_added_albums = get_recently_added_albums(mediaplayer, album_offset)
+    except:
+        recently_added_albums = []
 
     return render_template('recently_added/albums.html',
         recently_added_albums = recently_added_albums[0],
@@ -295,7 +300,7 @@ def get_recently_added_albums(mediaplayer, album_offset=0, mobile=False):
 
         for album in recently_added_albums:
             album['thumbnail'] = cache_recent_image(xbmc_label, 'albums', album['albumid'], album['thumbnail'])
-
+        
     except:
         recently_added_albums = []
 
