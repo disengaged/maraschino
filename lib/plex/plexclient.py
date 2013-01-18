@@ -130,7 +130,7 @@ class PLEXLibrary(object):
         
         for node in root:
             TVItems.append({'tvshowid':tvshowid,'season':season,'label':node.get('title'),'showtitle':showtitle,'thumbnail':node.get('thumb'),'episode':node.get('leafCount'),
-                            'playcount':node.get('viewCount')})
+                            'playcount':node.get('viewCount'),'firstaired':node.get('originallyAvailableAt')})
         return TVItems
 
     def getrecentlyaddedepisodes (self):
