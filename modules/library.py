@@ -1114,26 +1114,29 @@ def xbmc_get_details(mediaserver, media_type, mediaid):
 @requires_auth
 def xhr_library_resume_check(type, id):
     logger.log('LIBRARY :: Checking if %s has resume position' % type, 'INFO')
-    xbmc = jsonrpclib.Server(server_api_address())
+    if server_type() == "XBMC": # For now blanket say there is no resume position
+        xbmc = jsonrpclib.Server(server_api_address())
 
-    try:
-        if type == 'movie':
-            library = xbmc.VideoLibrary.GetMovieDetails(movieid=id, properties=['resume'])
+        try:
+            if type == 'movie':
+                library = xbmc.VideoLibrary.GetMovieDetails(movieid=id, properties=['resume'])
 
-        elif type == 'episode':
-            library = xbmc.VideoLibrary.GetEpisodeDetails(episodeid=id, properties=['resume'])
+            elif type == 'episode':
+                library = xbmc.VideoLibrary.GetEpisodeDetails(episodeid=id, properties=['resume'])
 
-    except:
-        logger.log('LIBRARY :: %s' % xbmc_error, 'ERROR')
-        return render_library(message=xbmc_error)
+        except:
+            logger.log('LIBRARY :: %s' % xbmc_error, 'ERROR')
+            return render_library(message=xbmc_error)
 
-    position = library[type + 'details']['resume']['position']
+        position = library[type + 'details']['resume']['position']
 
-    if position:
-        position = format_seconds(position)
+        if position:
+            position = format_seconds(position)
 
-        template = render_template('dialogs/library-resume_dialog.html', position=position, library=library)
-        return jsonify(resume=True, template=template)
+            template = render_template('dialogs/library-resume_dialog.html', position=position, library=library)
+            return jsonify(resume=True, template=template)
+        else:
+            return jsonify(resume=False, template=None)
     else:
         return jsonify(resume=False, template=None)
 
