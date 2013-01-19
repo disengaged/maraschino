@@ -1140,6 +1140,14 @@ def xhr_library_resume_check(type, id):
     else:
         return jsonify(resume=False, template=None)
 
+@app.route('/xhr/library/plex_clients')
+@requires_auth
+def xhr_library_plex_clients():
+    if (server_type()=="PLEX"):
+        mediaserver=PLEXLibrary(server_address())
+        clients = mediaserver.getclients()
+
+    return render_template('dialogs/library-plex_clients.html', clients=clients)
 
 def render_xbmc_library(template='library.html',
                         library=None,
