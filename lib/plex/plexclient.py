@@ -200,7 +200,7 @@ class PLEXLibrary(object):
 
     def getArtists (self):
         '''
-        getArtists returns the movie info from the library
+        getArtists returns the artist info from the library
         '''
         Artists=[]
         url="/library/sections/" + self.MusicLibrary + "/all"
@@ -218,6 +218,64 @@ class PLEXLibrary(object):
             Artists.append({'artistid':node.get('ratingKey'),'label':node.get('title'),'thumbnail':node.get('thumb'),'yearsactive':-1,'genre':genre})
 
         return Artists
+
+    def getAlbums (self, artistid):
+        '''
+        getAlbums returns the albums info from the library
+        '''
+        #Grab top level artist info
+        url="/library/metadata/"+str(artistid)
+        root = self.plexgetxml(url)
+
+        artistName = ""
+
+        for node in root:
+            artistName = node.get('title')
+
+        Albums=[]
+        url="/library/metadata/" + str(artistid) + "/children"
+        root = self.plexgetxml(url)
+
+        for node in root:
+            Albums.append({'artistid':artistid,'artist':artistName,'albumid':node.get('ratingKey'),'label':node.get('title'),'thumbnail':node.get('thumb'),'year':node.get('year')})
+
+        return Albums
+
+    def getSongs (self, artistid, albumid):
+        '''
+        getSongs returns the songs info from the library
+        '''
+        #Grab top level artist info
+        url="/library/metadata/"+str(artistid)
+        root = self.plexgetxml(url)
+
+        artistName = ""
+
+        for node in root:
+            artistName = node.get('title')
+
+        #Grab top level album info
+        url="/library/metadata/"+str(albumid)
+        root = self.plexgetxml(url)
+
+        albumName = ''
+        albumYear = ''
+
+        for node in root:
+            albumName = node.get('title')
+            albumYear = node.get('year')
+
+        Albums=[]
+        url="/library/metadata/" + str(albumid) + "/children"
+        root = self.plexgetxml(url)
+
+        for node in root:
+            index = 0
+            if node.get('index') != None:
+                track = int(node.get('index'))
+            Albums.append({'artistid':artistid,'albumid':albumid,'album':albumName,'artist':artistName,'year':albumYear,'title':node.get('title'),'thumbnail':node.get('thumb'),'track':index})
+
+        return Albums
 
     def getrecentlyaddedepisodes (self):
         '''

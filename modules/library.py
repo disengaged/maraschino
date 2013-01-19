@@ -967,55 +967,61 @@ def xbmc_get_artists(mediaserver):
     return artists
 
 
-def xbmc_get_albums(xbmc, artistid):
+def xbmc_get_albums(mediaserver, artistid):
     logger.log('LIBRARY :: Retrieving albums for artistid: %s' % artistid, 'INFO')
-    version = xbmc.Application.GetProperties(properties=['version'])['version']['major']
-    params = {}
+    if server_type() == "XBMC":
+        version = mediaserver.Application.GetProperties(properties=['version'])['version']['major']
+        params = {}
 
-    params['sort'] = xbmc_sort('albums')
-    params['properties'] = ['year', 'rating', 'thumbnail']
+        params['sort'] = xbmc_sort('albums')
+        params['properties'] = ['year', 'rating', 'thumbnail']
 
-    if version == 11: #Eden
-        params['artistid'] =  artistid
-        params['properties'].extend(['artistid', 'artist'])
+        if version == 11: #Eden
+            params['artistid'] =  artistid
+            params['properties'].extend(['artistid', 'artist'])
 
-    else: #Frodo
-        params['filter'] = {'artistid':artistid}
+        else: #Frodo
+            params['filter'] = {'artistid':artistid}
 
-    albums = xbmc.AudioLibrary.GetAlbums(**params)['albums']
+        albums = mediaserver.AudioLibrary.GetAlbums(**params)['albums']
 
-    if version > 11: #Frodo
-        artist = xbmc.AudioLibrary.GetArtistDetails(artistid=artistid)['artistdetails']['label']
-        for album in albums:
-            album['artistid'] = artistid
-            album['artist'] = artist
+        if version > 11: #Frodo
+            artist = mediaserver.AudioLibrary.GetArtistDetails(artistid=artistid)['artistdetails']['label']
+            for album in albums:
+                album['artistid'] = artistid
+                album['artist'] = artist
+    elif server_type() == "PLEX":
+        albums = mediaserver.getAlbums(artistid)
 
     return albums
 
 
-def xbmc_get_songs(xbmc, artistid, albumid):
+def xbmc_get_songs(mediaserver, artistid, albumid):
     logger.log('LIBRARY :: Retrieving songs for albumid: %s' % albumid, 'INFO')
-    version = xbmc.Application.GetProperties(properties=['version'])['version']['major']
-    params = {'sort': xbmc_sort('songs')}
+    if server_type() == "XBMC":
+        version = mediaserver.Application.GetProperties(properties=['version'])['version']['major']
+        params = {'sort': xbmc_sort('songs')}
 
-    if version < 12 and params['sort']['method'] in ['rating', 'playcount', 'random']: #Eden
-        logger.log('LIBRARY :: Sort method "%s" is not supported in XBMC Eden. Reverting to "track"' % params['sort']['method'], 'INFO')
-        change_sort('songs', 'track')
-        params['sort'] = xbmc_sort('songs')
+        if version < 12 and params['sort']['method'] in ['rating', 'playcount', 'random']: #Eden
+            logger.log('LIBRARY :: Sort method "%s" is not supported in XBMC Eden. Reverting to "track"' % params['sort']['method'], 'INFO')
+            change_sort('songs', 'track')
+            params['sort'] = xbmc_sort('songs')
 
-    params['properties'] = ['album', 'track', 'playcount', 'year', 'albumid', 'thumbnail',
-                            'rating', 'title', 'duration', 'artist']
+        params['properties'] = ['album', 'track', 'playcount', 'year', 'albumid', 'thumbnail',
+                                'rating', 'title', 'duration', 'artist']
 
-    if version == 11: #Eden
-        params['artistid'] = artistid
-        params['albumid'] = albumid
+        if version == 11: #Eden
+            params['artistid'] = artistid
+            params['albumid'] = albumid
 
-    else: #Frodo
-        params['filter'] = {
-            'albumid': albumid
-        }
+        else: #Frodo
+            params['filter'] = {
+                'albumid': albumid
+            }
 
-    songs = xbmc.AudioLibrary.GetSongs(**params)['songs']
+        songs = mediaserver.AudioLibrary.GetSongs(**params)['songs']
+    elif server_type() == "PLEX":
+        songs = mediaserver.getSongs(artistid, albumid)
 
     for song in songs:
         song['artistid'] = artistid
