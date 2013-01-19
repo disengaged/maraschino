@@ -492,9 +492,9 @@ def xhr_xbmc_library_media(media_type=None):
             return render_xbmc_library()
 
         if server_type()=="XBMC":
-            mediaplayer = jsonrpclib.Server(server_api_address())
+            mediaserver = jsonrpclib.Server(server_api_address())
         elif server_type()=="PLEX":
-            mediaplayer=PLEXLibrary(server_address(), get_setting_value('plex_movielib_id'), get_setting_value('plex_tvlib_id'), get_setting_value('plex_musiclib_id'))
+            mediaserver=PLEXLibrary(server_address(), get_setting_value('plex_movielib_id'), get_setting_value('plex_tvlib_id'), get_setting_value('plex_musiclib_id'))
         
         template = 'library/media.html'
 
@@ -506,7 +506,7 @@ def xhr_xbmc_library_media(media_type=None):
             if 'movieid' in request.args: #Movie details
                 movieid = request.args['movieid']
                 back_id['movies'] = movieid
-                library = xbmc_get_details(mediaplayer, 'movie', int(movieid))
+                library = xbmc_get_details(mediaserver, 'movie', int(movieid))
                 template = 'library/details.html'
                 title = '%s (%s)' % (library['label'], library['year'])
                 if 'setid' in request.args:
@@ -517,13 +517,13 @@ def xhr_xbmc_library_media(media_type=None):
             elif 'setid' in request.args: #Movie set
                 setid = request.args['setid']
                 back_id['movies'] = 'set' + setid
-                library = xbmc_get_moviesets(mediaplayer, int(setid))
+                library = xbmc_get_moviesets(mediaserver, int(setid))
                 title = library[0]['set']
                 path = '/movies?setid=%s' % setid
                 back_path = '/movies'
 
             else:
-                library = xbmc_get_movies(mediaplayer)
+                library = xbmc_get_movies(mediaserver)
                 title = 'Movies'
                 path = '/movies'
 
@@ -535,14 +535,14 @@ def xhr_xbmc_library_media(media_type=None):
             if 'tvshowid' in request.args: #TV show details
                 tvshowid = request.args['tvshowid']
                 back_id['tvshows'] = tvshowid
-                library = xbmc_get_details(mediaplayer, 'tvshow', int(tvshowid))
+                library = xbmc_get_details(mediaserver, 'tvshow', int(tvshowid))
                 template = 'library/details.html'
                 title = library['label']
                 path = '/tvshows?tvshowid=%s' % tvshowid
                 back_path = '/tvshows'
 
             else:
-                library = xbmc_get_tvshows(mediaplayer)
+                library = xbmc_get_tvshows(mediaserver)
                 title = 'TV Shows'
                 path = '/tvshows'
 
@@ -551,7 +551,7 @@ def xhr_xbmc_library_media(media_type=None):
             file_type = 'video'
             tvshowid = request.args['tvshowid']
             back_id['tvshows'] = tvshowid
-            library = xbmc_get_seasons(mediaplayer, int(tvshowid))
+            library = xbmc_get_seasons(mediaserver, int(tvshowid))
             title = library[0]['showtitle']
             path = '/seasons?tvshowid=%s' % tvshowid
             back_path = '/tvshows'
@@ -568,13 +568,13 @@ def xhr_xbmc_library_media(media_type=None):
             if 'episodeid' in request.args: #Episode details
                 episodeid = request.args['episodeid']
                 back_id['episodes'] = episodeid
-                library = xbmc_get_details(mediaplayer, 'episode', int(episodeid))
+                library = xbmc_get_details(mediaserver, 'episode', int(episodeid))
                 template = 'library/details.html'
                 title = library['label']
                 back_path = path
 
             else:
-                library = xbmc_get_episodes(mediaplayer, int(tvshowid), int(season))
+                library = xbmc_get_episodes(mediaserver, int(tvshowid), int(season))
                 title = '%s - Season %s' % (library[0]['showtitle'], library[0]['season'])
                 back_path = '/seasons?tvshowid=%s' % tvshowid
 
@@ -586,13 +586,13 @@ def xhr_xbmc_library_media(media_type=None):
             if 'artistid' in request.args: #Artist details
                 artistid = request.args['artistid']
                 back_id['artists'] = artistid
-                library = xbmc_get_details(mediaplayer, 'artist', int(artistid))
+                library = xbmc_get_details(mediaserver, 'artist', int(artistid))
                 template = 'library/details.html'
                 title = library['label']
                 back_path = '/artists'
 
             else:
-                library = xbmc_get_artists(mediaplayer)
+                library = xbmc_get_artists(mediaserver)
                 title = 'Artists'
                 path = '/artists'
 
@@ -606,13 +606,13 @@ def xhr_xbmc_library_media(media_type=None):
             if 'albumid' in request.args: #Album details
                 albumid = request.args['albumid']
                 back_id['albums'] = albumid
-                library = xbmc_get_details(mediaplayer, 'album', int(albumid))
+                library = xbmc_get_details(mediaserver, 'album', int(albumid))
                 template = 'library/details.html'
                 title = library['label']
                 back_path = path
 
             else:
-                library = xbmc_get_albums(mediaplayer, int(artistid))
+                library = xbmc_get_albums(mediaserver, int(artistid))
                 title = library[0]['artist']
                 back_path = '/artists'
             
@@ -624,7 +624,7 @@ def xhr_xbmc_library_media(media_type=None):
             back_id['artists'] = artistid
             back_id['albums'] = albumid
 
-            library = xbmc_get_songs(mediaplayer, int(artistid), int(albumid))
+            library = xbmc_get_songs(mediaserver, int(artistid), int(albumid))
             title = '%s (%s)' % (library[0]['album'], library[0]['year'])
             path = '/songs?artistid=%s&albumid=%s' % (artistid, albumid)
             back_path = '/albums?artistid=%s' % artistid
@@ -650,7 +650,7 @@ def xhr_xbmc_library_media(media_type=None):
                 file_type = 'audio'
                 title = 'Live Radio'
 
-            library = xbmc_get_channelgroups(mediaplayer, channeltype)
+            library = xbmc_get_channelgroups(mediaserver, channeltype)
             path = '/channelgroups?type=%s' % channeltype
             back_path = '/pvr'
 
@@ -664,7 +664,7 @@ def xhr_xbmc_library_media(media_type=None):
 
             channelgroupid = request.args['channelgroupid']
 
-            library = xbmc_get_channels(mediaplayer, channeltype, int(channelgroupid))
+            library = xbmc_get_channels(mediaserver, channeltype, int(channelgroupid))
             path = '/channels?type=%s&channelgroupid=%s' % (channeltype, channelgroupid)
             back_path = '/channelgroups?type=%s' % channeltype
             title = library[0]['grouplabel']
@@ -688,11 +688,11 @@ def xhr_xbmc_library_media(media_type=None):
                         if back_path.endswith('/') or back_path.endswith('\\'):
                             back_path = back_path[:-1]
 
-                    library = xbmc_get_file_path(mediaplayer, file_type, title)
+                    library = xbmc_get_file_path(mediaserver, file_type, title)
 
                 else: #Sources
                     file_sources = {}
-                    library = xbmc_get_sources(mediaplayer, file_type)
+                    library = xbmc_get_sources(mediaserver, file_type)
                     title = '%s Sources' % file_type.title()
                     path = '/files?files=%s' % file_type
                     back_path = '/files'
