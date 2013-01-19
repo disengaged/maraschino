@@ -329,7 +329,7 @@ class PLEXClient(object):
                 curplay['songno']=line[7:].strip()
             elif line.startswith("Filename"):
                 curplay['filename']=line[9:].strip()
-                if (curplay['filename']=='[Nothing Playing]'):
+                if curplay['filename']=='[Nothing Playing]':
                     curplay['playstatus']='Stopped'
             elif line.startswith("VideoNo"):
                 curplay['videono']=line[8:].strip()
@@ -378,7 +378,7 @@ class PLEXClient(object):
                 curplay['filesize']=line[10:].strip()
             elif line.startswith("Changed"):
                 curplay['changed']=line[8:].strip()
-            if ('year' not in curplay):
+            if 'year' not in curplay:
                 curplay['year']=0
         return curplay,playerinfo
 
