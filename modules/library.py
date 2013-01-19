@@ -513,7 +513,7 @@ def xhr_xbmc_library_media(media_type=None):
                     back_path = '/movies?setid=%s' % request.args['setid']
                 else:
                     back_path = '/movies'
-
+                
             elif 'setid' in request.args: #Movie set
                 setid = request.args['setid']
                 back_id['movies'] = 'set' + setid
@@ -862,13 +862,13 @@ def xbmc_get_tvshows(mediaplayer):
         tvshows = mediaplayer.VideoLibrary.GetTVShows(sort=sort, properties=properties)['tvshows']
     elif (server_type() == "PLEX"):
         tvshows = mediaplayer.getTVShows()
-
+    
     if get_setting_value('xbmc_tvshows_hide_watched') == '1':
         if (server_type() == "XBMC"):
             tvshows = [x for x in tvshows if not x['playcount']]
         elif(server_type() == "PLEX"):
             tvshows = [x for x in tvshows if not x['playcount'] == '1']
-
+    
     return tvshows
 
 
@@ -1076,19 +1076,25 @@ def xbmc_get_details(mediaserver, media_type, mediaid):
     logger.log('LIBRARY :: Retrieving %s details for %sid: %s' % (media_type, media_type, mediaid), 'INFO')
 
     if media_type == 'movie':
-        properties = ['title', 'rating', 'year', 'genre', 'plot', 'director', 'thumbnail', 'trailer', 'playcount', 'resume']
-        details = mediaserver.VideoLibrary.GetMovieDetails(movieid=mediaid, properties=properties)['moviedetails']
+        if (server_type() == "XBMC"):
+            properties = ['title', 'rating', 'year', 'genre', 'plot', 'director', 'thumbnail', 'trailer', 'playcount', 'resume']
+            details = mediaserver.VideoLibrary.GetMovieDetails(movieid=mediaid, properties=properties)['moviedetails']
+        elif (server_type() == "PLEX"):
+            details = mediaserver.getMovieInfo(mediaid)
 
     elif media_type == 'tvshow':
         if (server_type() == "XBMC"):
             properties = ['title', 'rating', 'year', 'genre', 'plot', 'premiered', 'thumbnail', 'playcount', 'studio']
             details = mediaserver.VideoLibrary.GetTVShowDetails(tvshowid=mediaid, properties=properties)['tvshowdetails']
         elif (server_type() == "PLEX"):
-            details = mediaserver.getTVSeasons(mediaid)
+            details = mediaserver.getTVShowInfo(mediaid)
 
     elif media_type == 'episode':
-        properties = ['season', 'tvshowid', 'title', 'rating', 'plot', 'thumbnail', 'playcount', 'firstaired', 'resume']
-        details = mediaserver.VideoLibrary.GetEpisodeDetails(episodeid=mediaid, properties=properties)['episodedetails']
+        if (server_type() == "XBMC"):
+            properties = ['season', 'tvshowid', 'title', 'rating', 'plot', 'thumbnail', 'playcount', 'firstaired', 'resume']
+            details = mediaserver.VideoLibrary.GetEpisodeDetails(episodeid=mediaid, properties=properties)['episodedetails']
+        elif (server_type() == "PLEX"):
+            details = mediaserver.getTVEpisodeInfo(mediaid)
 
     elif media_type == 'artist':
         properties = ['description', 'thumbnail', 'genre']
@@ -1134,7 +1140,7 @@ def xhr_library_resume_check(type, id):
 
 def render_xbmc_library(template='library.html',
                         library=None,
-                        title='XBMC Library',
+                        title='Media Library',
                         message=None,
                         media=None,
                         file=None,

@@ -85,6 +85,19 @@ class PLEXLibrary(object):
                             'playcount':watched})
         return TVItems
 
+    def getTVShowInfo (self, ratingKey):
+        '''
+        getMovieInfo returns the tv show info from the library
+        '''
+        url="/library/metadata/"+str(ratingKey)
+        root = self.plexgetxml(url)
+        
+        for node in root:
+            return {'tvshowid':ratingKey,'label':node.get('title'),'year':node.get('year'),'thumbnail':node.get('thumb'),'genre':-1,'plot':node.get('summary'),
+                    'playcount':0, 'rating': -1,'premiered':node.get('originallyAvailableAt'),'studio':node.get('studio')}
+       
+        return {}
+
     def getTVSeasons (self, tvshowid):
         '''
         getTVSeasons returns the TV seasons from the library
@@ -129,9 +142,22 @@ class PLEXLibrary(object):
         root = self.plexgetxml(url)
         
         for node in root:
-            TVItems.append({'tvshowid':tvshowid,'season':season,'label':node.get('title'),'showtitle':showtitle,'thumbnail':node.get('thumb'),'episode':node.get('leafCount'),
+            TVItems.append({'tvshowid':tvshowid,'season':season,'episodeid':node.get('ratingKey'),'label':node.get('title'),'showtitle':showtitle,'thumbnail':node.get('thumb'),'episode':node.get('leafCount'),
                             'playcount':node.get('viewCount'),'firstaired':node.get('originallyAvailableAt')})
         return TVItems
+
+    def getTVEpisodeInfo (self, episodeid):
+        '''
+        getTVEpisodeInfo returns the tv episode info from the library
+        '''
+        url="/library/metadata/"+str(episodeid)
+        root = self.plexgetxml(url)
+        
+        for node in root:
+            return {'episodeid':episodeid,'label':node.get('title'),'thumbnail':node.get('thumb'),'plot':node.get('summary'),
+                    'rating': -1,'firstaired':node.get('originallyAvailableAt')}
+       
+        return {}
 
     def getMovies (self):
         '''
@@ -142,8 +168,35 @@ class PLEXLibrary(object):
         root = self.plexgetxml(url)
         
         for node in root:
-            Movies.append({'label':node.get('title'),'year':node.get('year'),'thumbnail':node.get('thumb')})
+            Movies.append({'movieid':node.get('ratingKey'),'label':node.get('title'),'year':node.get('year'),'thumbnail':node.get('thumb')})
         return Movies
+
+    def getMovieInfo (self, ratingKey):
+        '''
+        getMovieInfo returns the movie info from the library
+        '''
+        url="/library/metadata/"+str(ratingKey)
+        root = self.plexgetxml(url)
+        
+        for node in root:
+            genre = ''
+            director = ''
+            for subnode in node:
+                if subnode.tag == 'Genre':
+                    if genre == '':
+                        genre = subnode.get('tag')
+                    else:
+                        genre += ', ' + subnode.get('tag')
+                elif subnode.tag == 'Director':
+                    if director == '':
+                        director = subnode.get('tag')
+                    else:
+                        director += ', ' + subnode.get('tag')
+           
+            return {'movieid':ratingKey,'label':node.get('title'),'year':node.get('year'),'thumbnail':node.get('thumb'),'genre':genre,'plot':node.get('summary'),
+                    'director':director,'playcount':0, 'rating': -1}
+       
+        return {}
 
     def getrecentlyaddedepisodes (self):
         '''
