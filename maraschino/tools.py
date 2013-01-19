@@ -7,7 +7,7 @@ from jinja2.filters import FILTERS
 import os
 import maraschino
 from maraschino import app, logger
-from maraschino.models import Setting, XbmcServer
+from maraschino.models import Setting, MediaServer
 from flask import send_file
 import StringIO
 import urllib
@@ -206,7 +206,7 @@ def xbmc_proxy(version, label):
     url = request.args['path']
 
     if label != 'default':
-        server = XbmcServer.query.filter(XbmcServer.label == label).first()
+        server = MediaServer.query.filter(MediaServer.label == label).first()
         xbmc_url = 'http://'
 
         if server.username and server.password:

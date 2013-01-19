@@ -8,7 +8,7 @@ from maraschino import app, logger, DATA_DIR, THREADS, HOST, PORT, WEBROOT
 from maraschino.noneditable import *
 from maraschino.tools import *
 from threading import Thread
-from maraschino.models import RecentlyAdded, XbmcServer
+from maraschino.models import RecentlyAdded, MediaServer
 from maraschino.database import db_session
 
 
@@ -60,7 +60,7 @@ def get_recent_xbmc_label(setting):
         if active_server:
             active_server = int(active_server)
 
-            server = XbmcServer.query.filter(XbmcServer.id == active_server).first()
+            server = MediaServer.query.filter(MediaServer.id == active_server).first()
             return server.label
         else:
             return 'unknown'

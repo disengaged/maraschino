@@ -5,7 +5,7 @@ from maraschino import app, RUNDIR, logger
 from socket import *
 from xbmc.xbmcclient import *
 from maraschino.tools import get_file_list
-from maraschino.models import XbmcServer
+#from maraschino.models import MediaServer #Un-needed import?
 from maraschino.noneditable import *
 from plex.plexclient import PLEXLibrary, PLEXClient
 
