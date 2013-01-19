@@ -236,12 +236,10 @@ class PLEXLibrary(object):
                                'albumid':node.get('ratingKey')})
         return MusicItems
     
-    def playfile (self,filetoplay,player,mediatype='episode'):
-        if mediatype=='episode':
-            url=self.server+"/library/sections/"+self.TVLibrary+"/recentlyAdded"
-        elif mediatype == 'movie':
-            url=self.server+"/library/sections/"+self.MovieLibrary+"/recentlyAdded"
+    def playfile (self,filetoplay,player):
         key='/library/metadata/'+filetoplay
+        url=self.server+key
+        
         f={'path': url, 'key': key}
         url=self.server+"/system/players/"+player+"/application/playMedia?"+urllib.urlencode(f)
         result=getHTMLbody(url)

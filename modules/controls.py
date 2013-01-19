@@ -95,7 +95,7 @@ def xhr_play_media(file_type, media_type, media_id):
             item = {'playlistid': id, 'position': position}
             xbmc.Player.Open(item)
         elif server_type()=="PLEX":
-            plexlibrary.playfile (item,plexlibrary.getclients()[0]['host'],media_type)
+            plexlibrary.playfile (item,plexlibrary.getclients()[0]['host'])
     except:
         logger.log('CONTROLS :: Failed to open %s playlist' % file_type, 'DEBUG')
         return jsonify({'failed': True})
