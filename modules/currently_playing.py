@@ -14,7 +14,7 @@ def xhr_currently_playing():
 
         if not api_address:
             raise Exception
-        if (server_type()=="XBMC"):
+        if server_type()=="XBMC":
             xbmc = jsonrpclib.Server(api_address)
             active_player = xbmc.Player.GetActivePlayers()
             playerid = active_player[0]['playerid']
@@ -32,7 +32,7 @@ def xhr_currently_playing():
 
             fanart = currently_playing['fanart']
             itemart = currently_playing['thumbnail']
-        elif (server_type()=='PLEX'):
+        elif server_type()=='PLEX':
             plexlibrary=PLEXLibrary(server_address())
             
             currently_playing,player_info=plexlibrary.currently_playing()
@@ -45,7 +45,7 @@ def xhr_currently_playing():
                     itemart = currently_playing['thumbnail']
                     volume=player_info['volume']
                     break
-            if (currently_playing['playstatus']=='Stopped'):
+            if currently_playing['playstatus']=='Stopped':
                 raise Exception
     except:
         return jsonify({ 'playing': False })

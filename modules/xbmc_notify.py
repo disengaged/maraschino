@@ -37,7 +37,7 @@ def xhr_notify_message():
     if title == "Title":
         title = "Maraschino"
 
-    if (server_type() == "XBMC"):
+    if server_type() == "XBMC":
         port = 9777
         icon = os.path.join(RUNDIR, 'static', 'images', 'notifications', request.form['image'])
 
@@ -67,7 +67,7 @@ def xhr_notify_message():
         except:
             logger.log('NOTIFY XBMC :: Message failed to send', 'ERROR')
             return jsonify({ 'error': 'Message failed to send'})
-    else:
+    elif server_type() == "PLEX":
 
         try:
             logger.log('NOTIFY XBMC :: Sending message %s' % label, 'INFO')

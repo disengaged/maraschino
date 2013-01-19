@@ -72,9 +72,9 @@ def render_recently_added_episodes(episode_offset=0):
     view_info = get_setting_value('recently_added_info') == '1'
 
     try:
-        if (server_type()=="XBMC"):
+        if server_type()=="XBMC":
             mediaplayer = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_server'))
-        elif (server_type()=="PLEX"):
+        elif server_type()=="PLEX":
             mediaplayer=PLEXLibrary(server_address(),TVLibID=get_setting_value('plex_tvlib_id'))
 
         recently_added_episodes = get_recently_added_episodes(mediaplayer, episode_offset)
@@ -97,9 +97,9 @@ def render_recently_added_movies(movie_offset=0):
     view_info = get_setting_value('recently_added_movies_info') == '1'
 
     try:
-        if (server_type()=="XBMC"):
+        if server_type()=="XBMC":
             mediaplayer = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_movies_server'))
-        elif (server_type()=="PLEX"):
+        elif server_type()=="PLEX":
             mediaplayer=PLEXLibrary(server_address(), MovieLibID=get_setting_value('plex_movielib_id'))
 
         recently_added_movies = get_recently_added_movies(mediaplayer, movie_offset)
@@ -121,9 +121,9 @@ def render_recently_added_albums(album_offset=0):
     view_info = get_setting_value('recently_added_albums_info') == '1'
 
     try:
-        if (server_type()=="XBMC"):
+        if server_type()=="XBMC":
             mediaplayer = jsonrpclib.Server(get_recent_xbmc_api_url('recently_added_albums_server'))
-        elif (server_type()=="PLEX"):
+        elif server_type()=="PLEX":
             mediaplayer=PLEXLibrary(server_address(), MusicLibID=get_setting_value('plex_musiclib_id'))
 
         recently_added_albums = get_recently_added_albums(mediaplayer, album_offset)
@@ -169,9 +169,9 @@ def get_recently_added_episodes(mediaplayer, episode_offset=0, mobile=False):
     using_db = False
 
     try:
-        if (server_type()=="XBMC"): 
+        if server_type()=="XBMC": 
             recently_added_episodes = mediaplayer.VideoLibrary.GetRecentlyAddedEpisodes(properties = ['title', 'season', 'episode', 'showtitle', 'playcount', 'thumbnail', 'tvshowid'])['episodes']
-        elif (server_type()=="PLEX"):
+        elif server_type()=="PLEX":
             recently_added_episodes = mediaplayer.getrecentlyaddedepisodes()
 
         recently_added_db_add(xbmc_label, 'episodes', recently_added_episodes)
@@ -225,9 +225,9 @@ def get_recently_added_movies(mediaserver, movie_offset=0, mobile=False):
     using_db = False
 
     try:
-        if (server_type()=="XBMC"):
+        if server_type()=="XBMC":
             recently_added_movies = mediaserver.VideoLibrary.GetRecentlyAddedMovies(properties = ['title', 'year', 'rating', 'playcount', 'thumbnail'])['movies']
-        elif (server_type()=="PLEX"):
+        elif server_type()=="PLEX":
             recently_added_movies=mediaserver.getrecentlyaddedmovies()
 
         recently_added_db_add(xbmc_label, 'movies', recently_added_movies)
@@ -279,9 +279,9 @@ def get_recently_added_albums(mediaplayer, album_offset=0, mobile=False):
     using_db = False
     
     try:
-        if (server_type()=="XBMC"):
+        if server_type()=="XBMC":
             recently_added_albums = mediaplayer.AudioLibrary.GetRecentlyAddedAlbums(properties = ['title', 'year', 'rating', 'artist', 'thumbnail'])['albums']
-        elif (server_type()=="PLEX"):
+        elif server_type()=="PLEX":
             recently_added_albums = mediaplayer.getrecentlyaddedalbums()
 
         for album in recently_added_albums:

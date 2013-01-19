@@ -387,7 +387,7 @@ def xhr_change_channel(channelid):
 @app.route('/xhr/controls/<command>')
 @requires_auth
 def xhr_controls(command):
-    if (server_type()=="XBMC"):
+    if server_type()=="XBMC":
         serversettings = server_settings()
         xbmc = jsonrpclib.Server(server_api_address())
 
@@ -622,7 +622,7 @@ def xhr_controls(command):
                     logger.log('CONTROLS :: Failed to send WOL packet', 'ERROR')
                     return_response = 'failed'
 
-    elif (server_type()=="PLEX"):
+    elif server_type()=="PLEX":
         mediaplayer = PLEXLibrary(server_address())
         active_players=mediaplayer.active_players()
         active_player=active_players[0]

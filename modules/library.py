@@ -491,11 +491,11 @@ def xhr_xbmc_library_media(media_type=None):
 
             return render_xbmc_library()
 
-        if (server_type()=="XBMC"):
+        if server_type()=="XBMC":
             mediaplayer = jsonrpclib.Server(server_api_address())
-        elif (server_type()=="PLEX"):
+        elif server_type()=="PLEX":
             mediaplayer=PLEXLibrary(server_address(), get_setting_value('plex_movielib_id'), get_setting_value('plex_tvlib_id'), get_setting_value('plex_musiclib_id'))
-        #xbmc = jsonrpclib.Server(server_api_address())
+        
         template = 'library/media.html'
 
 
@@ -728,9 +728,9 @@ def xbmc_get_movies(mediaserver):
     sort = xbmc_sort('movies')
     properties = ['playcount', 'thumbnail', 'year', 'rating', 'set']
 
-    if (server_type() == "XBMC"):
+    if server_type() == "XBMC":
         movies = mediaserver.VideoLibrary.GetMovies(sort=sort, properties=properties)['movies']
-    elif (server_type() == "PLEX"):
+    elif server_type() == "PLEX":
         movies = mediaserver.getMovies()
 
     if get_setting_value('xbmc_movies_view_sets') == '1':
@@ -853,14 +853,14 @@ def xbmc_get_tvshows(mediaplayer):
     sort = xbmc_sort('tvshows')
     properties = ['playcount', 'thumbnail', 'premiered', 'rating', 'file']
 
-    if (server_type() == "XBMC"):
+    if server_type() == "XBMC":
         version = mediaplayer.Application.GetProperties(properties=['version'])['version']['major']
 
         if version > 11: #Frodo
             properties.append('art')
 
         tvshows = mediaplayer.VideoLibrary.GetTVShows(sort=sort, properties=properties)['tvshows']
-    elif (server_type() == "PLEX"):
+    elif server_type() == "PLEX":
         tvshows = mediaplayer.getTVShows()
     
     if get_setting_value('xbmc_tvshows_hide_watched') == '1':
@@ -875,7 +875,7 @@ def xbmc_get_tvshows(mediaplayer):
 def xbmc_get_seasons(mediaserver, tvshowid):
     logger.log('LIBRARY :: Retrieving seasons for tvshowid: %s' % tvshowid, 'INFO')
 
-    if (server_type() == "XBMC"):
+    if server_type() == "XBMC":
         version = mediaserver.Application.GetProperties(properties=['version'])['version']['major']
         params = {'sort': xbmc_sort('seasons')}
 
@@ -889,7 +889,7 @@ def xbmc_get_seasons(mediaserver, tvshowid):
 
         seasons = mediaserver.VideoLibrary.GetSeasons(**params)['seasons']
 
-    elif (server_type() == "PLEX"):
+    elif server_type() == "PLEX":
         seasons = mediaserver.getTVSeasons(tvshowid)
         if get_setting_value('xbmc_seasons_hide_watched') == '1':
             seasons = [x for x in seasons if not x['watched'] == '1']
@@ -901,7 +901,7 @@ def xbmc_get_seasons(mediaserver, tvshowid):
         elif (server_type() == "PLEX"):
             seasons = [x for x in seasons if not x['watched'] == '1']
 
-    if (server_type() == "XBMC"): # For now only XBMC only...Plex might pick this up eventually
+    if server_type() == "XBMC": # For now only XBMC only...Plex might pick this up eventually
         #Add episode playcounts to seasons
         for season in seasons:
             episodes = mediaserver.VideoLibrary.GetEpisodes(
@@ -917,7 +917,7 @@ def xbmc_get_seasons(mediaserver, tvshowid):
 def xbmc_get_episodes(mediaserver, tvshowid, season):
     logger.log('LIBRARY :: Retrieving episodes for tvshowid: %s season: %s' % (tvshowid, season), 'INFO')
 
-    if (server_type() == "XBMC"):
+    if server_type() == "XBMC":
         version = mediaserver.Application.GetProperties(properties=['version'])['version']['major']
         params = {'sort': xbmc_sort('episodes')}
 
@@ -932,7 +932,7 @@ def xbmc_get_episodes(mediaserver, tvshowid, season):
 
         episodes = mediaserver.VideoLibrary.GetEpisodes(**params)['episodes']
 
-    elif (server_type() == "PLEX"):
+    elif server_type() == "PLEX":
         episodes = mediaserver.getTVEpisodes(tvshowid, season)
 
     if get_setting_value('xbmc_episodes_hide_watched') == '1':
@@ -1076,24 +1076,24 @@ def xbmc_get_details(mediaserver, media_type, mediaid):
     logger.log('LIBRARY :: Retrieving %s details for %sid: %s' % (media_type, media_type, mediaid), 'INFO')
 
     if media_type == 'movie':
-        if (server_type() == "XBMC"):
+        if server_type() == "XBMC":
             properties = ['title', 'rating', 'year', 'genre', 'plot', 'director', 'thumbnail', 'trailer', 'playcount', 'resume']
             details = mediaserver.VideoLibrary.GetMovieDetails(movieid=mediaid, properties=properties)['moviedetails']
-        elif (server_type() == "PLEX"):
+        elif server_type() == "PLEX":
             details = mediaserver.getMovieInfo(mediaid)
 
     elif media_type == 'tvshow':
-        if (server_type() == "XBMC"):
+        if server_type() == "XBMC":
             properties = ['title', 'rating', 'year', 'genre', 'plot', 'premiered', 'thumbnail', 'playcount', 'studio']
             details = mediaserver.VideoLibrary.GetTVShowDetails(tvshowid=mediaid, properties=properties)['tvshowdetails']
-        elif (server_type() == "PLEX"):
+        elif server_type() == "PLEX":
             details = mediaserver.getTVShowInfo(mediaid)
 
     elif media_type == 'episode':
-        if (server_type() == "XBMC"):
+        if server_type() == "XBMC":
             properties = ['season', 'tvshowid', 'title', 'rating', 'plot', 'thumbnail', 'playcount', 'firstaired', 'resume']
             details = mediaserver.VideoLibrary.GetEpisodeDetails(episodeid=mediaid, properties=properties)['episodedetails']
-        elif (server_type() == "PLEX"):
+        elif server_type() == "PLEX":
             details = mediaserver.getTVEpisodeInfo(mediaid)
 
     elif media_type == 'artist':
