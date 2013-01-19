@@ -198,6 +198,27 @@ class PLEXLibrary(object):
        
         return {}
 
+    def getArtists (self):
+        '''
+        getArtists returns the movie info from the library
+        '''
+        Artists=[]
+        url="/library/sections/" + self.MusicLibrary + "/all"
+        root = self.plexgetxml(url)
+
+        for node in root:
+            genre = ''
+            for subnode in node:
+                if subnode.tag == 'Genre':
+                    if genre == '':
+                        genre = subnode.get('tag')
+                    else:
+                        genre += ', ' + subnode.get('tag')
+
+            Artists.append({'artistid':node.get('ratingKey'),'label':node.get('title'),'thumbnail':node.get('thumb'),'yearsactive':-1,'genre':genre})
+
+        return Artists
+
     def getrecentlyaddedepisodes (self):
         '''
         getrecentlyaddedepisodes returns the recently added TV episodes from the library

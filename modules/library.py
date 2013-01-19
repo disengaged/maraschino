@@ -941,26 +941,28 @@ def xbmc_get_episodes(mediaserver, tvshowid, season):
     return episodes
 
 
-def xbmc_get_artists(xbmc):
+def xbmc_get_artists(mediaserver):
     logger.log('LIBRARY :: Retrieving artists', 'INFO')
+    if server_type() == "XBMC":
+        properties = ['thumbnail', 'genre', 'yearsactive']
+        sort = xbmc_sort('artists')
 
-    properties = ['thumbnail', 'genre', 'yearsactive']
-    sort = xbmc_sort('artists')
+        params = {
+            'sort': sort,
+            'properties': properties
+        }
 
-    params = {
-        'sort': sort,
-        'properties': properties
-    }
+        if get_setting_value('xbmc_artists_albumartistsonly') == '0':
+            params['albumartistsonly'] = True
 
-    if get_setting_value('xbmc_artists_albumartistsonly') == '0':
-        params['albumartistsonly'] = True
+        artists = mediaserver.AudioLibrary.GetArtists(**params)['artists']
 
-    artists = xbmc.AudioLibrary.GetArtists(**params)['artists']
-
-    for artist in artists:
-        for k in artist:
-            if isinstance(artist[k], list): #Frodo
-                artist[k] = " / ".join(artist[k])
+        for artist in artists:
+            for k in artist:
+                if isinstance(artist[k], list): #Frodo
+                    artist[k] = " / ".join(artist[k])
+    elif server_type() == "PLEX":
+        artists = mediaserver.getArtists()
 
     return artists
 
