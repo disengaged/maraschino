@@ -1065,7 +1065,7 @@ def server_settings_dialog(server_id=None):
     # GET
 
     if request.method == 'GET':
-        #This is to check to make sure data exists
+        # This is a workaround to data not existing when we are creating a new server and in turn throwing errors at the template when trying to access the data
         hostname = ''
         port = ''
         username = ''
