@@ -479,7 +479,7 @@ def xhr_xbmc_library_media(media_type=None):
     path = None
     back_path = '/'
     library = None
-
+    
     if not server_api_address():
         logger.log('LIBRARY :: No Media server defined', 'ERROR')
         return render_xbmc_library(message="You need to configure Media server settings first.")
@@ -495,7 +495,7 @@ def xhr_xbmc_library_media(media_type=None):
             mediaserver = jsonrpclib.Server(server_api_address())
         elif server_type()=="PLEX":
             mediaserver=PLEXLibrary(server_address(), get_setting_value('plex_movielib_id'), get_setting_value('plex_tvlib_id'), get_setting_value('plex_musiclib_id'))
-        
+
         template = 'library/media.html'
 
 

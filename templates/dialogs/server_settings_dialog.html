@@ -17,27 +17,27 @@
 
     <div class="formrow">
       <label for="id_server_hostname">Hostname / IP address</label>
-      <input id="id_server_hostname" name="hostname" type="text" value="{{ server.hostname }}">
+      <input id="id_server_hostname" name="hostname" type="text" value="{{ server.data.hostname }}">
     </div>
 
     <div class="formrow">
       <label for="id_server_port">Port</label>
-      <input id="id_server_port" name="port" type="text" value="{{ server.port }}">
+      <input id="id_server_port" name="port" type="text" value="{{ server.data.port }}">
     </div>
 
     <div class="formrow">
       <label for="id_server_username">Username (optional)</label>
-      <input id="id_server_username" name="username" type="text" value="{{ server.username }}">
+      <input id="id_server_username" name="username" type="text" value="{{ server.data.username }}">
     </div>
 
     <div class="formrow">
       <label for="id_server_password">Password (optional)</label>
-      <input id="id_server_password" name="password" type="password" value="{{ server.password }}">
+      <input id="id_server_password" name="password" type="password" value="{{ server.data.password }}">
     </div>
 
     <div class="formrow">
       <label for="id_server_mac_address">MAC Address (optional)</label>
-      <input id="id_server_mac_address" name="mac_address" type="text" value="{{ server.mac_address }}">
+      <input id="id_server_mac_address" name="mac_address" type="text" value="{{ server.data.mac_address }}">
     </div>
 
     <div class="formrow">

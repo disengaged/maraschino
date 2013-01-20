@@ -1073,22 +1073,23 @@ def server_settings_dialog(server_id=None):
 
     else:
         if not server:
-            server = MediaServer('', 1, '')
+            server = MediaServer('', '', {}, 1)
 
         label = request.form['label']
         if not label:
             label = 'Media server'
 
         try:
+            server.data = {'hostname': request.form['hostname'], 'port': request.form['port'], 
+                        'username': request.form['username'], 'password': request.form['password'], 'mac_address': request.form['mac_address']}
             server.type = request.form['type']
             server.label = label
             server.position = request.form['position']
-            server.hostname = request.form['hostname']
-            server.port = request.form['port']
-            server.username = request.form['username']
-            server.password = request.form['password']
-            server.mac_address = request.form['mac_address']
-
+            #server.hostname = request.form['hostname']
+            #server.port = request.form['port']
+            #server.username = request.form['username']
+            #server.password = request.form['password']
+            #server.mac_address = request.form['mac_address']
             db_session.add(server)
             db_session.commit()
 
@@ -1098,13 +1099,13 @@ def server_settings_dialog(server_id=None):
                 active_server = Setting('active_server', server.id)
                 db_session.add(active_server)
                 db_session.commit()
-
+            logger.log(active_server, 'INFO')
             return render_template('includes/servers.html',
                 servers = MediaServer.query.order_by(MediaServer.position),
             )
 
         except:
-            logger.log('Error saving XBMC server to database', 'WARNING')
+            logger.log('Error saving Media server to database', 'WARNING')
             return jsonify({ 'status': 'error' })
 
     return jsonify({ 'status': 'error' })
@@ -1117,12 +1118,12 @@ def delete_server(server_id=None):
     """
 
     try:
-        xbmc_server = MediaServer.query.get(server_id)
-        db_session.delete(xbmc_server)
+        mediaServer = MediaServer.query.get(MediaServer.id == server_id)
+        db_session.delete(mediaServer)
         db_session.commit()
 
         # Remove the server's cache
-        label = xbmc_server.label
+        label = mediaServer.label
         recent_cache = [label + '_episodes', label + '_movies', label + '_albums']
 
         try:
@@ -1135,7 +1136,7 @@ def delete_server(server_id=None):
         except:
             logger.log('Failed to remove servers database cache' , 'WARNING')
 
-        image_dir = os.path.join(maraschino.DATA_DIR, 'cache', 'xbmc', xbmc_server.label)
+        image_dir = os.path.join(maraschino.DATA_DIR, 'cache', 'xbmc', mediaServer.label)
         if os.path.isdir(image_dir):
             import shutil
 
@@ -1159,7 +1160,7 @@ def switch_server(server_id=None):
     Switches XBMC servers.
     """
 
-    xbmc_server = MediaServer.query.get(server_id)
+    mediaServer = MediaServer.query.get(MediaServer.id == server_id)
 
     try:
         active_server = get_setting('active_server')
@@ -1197,11 +1198,11 @@ def module_get_xbmc_servers():
     for server in servers:
         server = {
             'label': server.label,
-            'hostname': server.hostname,
-            'port': server.port,
-            'username': server.username,
-            'password': server.password,
-            'mac_address': server.mac_address,
+            'hostname': server.data["hostname"],
+            'port': server.data["port"],
+            'username': server.data["username"],
+            'password': server.data["password"],
+            'mac_address': server.data["mac_address"],
         }
         if server['hostname'] and server['port']:
             url = 'http://'

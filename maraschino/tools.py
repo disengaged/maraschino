@@ -209,10 +209,10 @@ def xbmc_proxy(version, label):
         server = MediaServer.query.filter(MediaServer.label == label).first()
         xbmc_url = 'http://'
 
-        if server.username and server.password:
-            xbmc_url += '%s:%s@' % (server.username, server.password)
+        if server.data["username"] and server.data["password"]:
+            xbmc_url += '%s:%s@' % (server.data["username"], server.data["password"])
 
-        xbmc_url += '%s:%s' % (server.hostname, server.port)
+        xbmc_url += '%s:%s' % (server.data["hostname"], server.data["port"])
 
     else:
         xbmc_url = server_address()

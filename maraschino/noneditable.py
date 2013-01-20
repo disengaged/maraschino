@@ -6,7 +6,7 @@ from maraschino.models import Module, Setting, MediaServer
 
 def server_settings():
     """Get settings for active XBMC server instance"""
-
+    
     # query all configured XBMC servers from the db
     servers = MediaServer.query.order_by(MediaServer.position)
 
@@ -35,12 +35,12 @@ def server_settings():
         server = servers.first()
 
     return {
-        'hostname': server.hostname,
-        'port': server.port,
-        'username': server.username,
-        'password': server.password,
+        'hostname': server.data['hostname'],
+        'port': server.data['port'],
+        'username': server.data['username'],
+        'password': server.data['password'],
         'type': server.type,
-        'mac_address': server.mac_address,
+        'mac_address': server.data['mac_address'],
     }
 
 def server_username_password():
