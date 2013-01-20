@@ -1065,8 +1065,27 @@ def server_settings_dialog(server_id=None):
     # GET
 
     if request.method == 'GET':
+        #This is to check to make sure data exists
+        hostname = ''
+        port = ''
+        username = ''
+        password = ''
+        mac_address = ''
+
+        if server != None:
+            hostname = server.data['hostname']
+            port = server.data['port']
+            username = server.data['username']
+            password = server.data['password']
+            mac_address = server.data['mac_address']
+
         return render_template('dialogs/server_settings_dialog.html',
             server = server,
+            hostname = hostname,
+            port = port,
+            username = username,
+            password = password,
+            mac_address = mac_address
         )
 
     # POST
