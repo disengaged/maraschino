@@ -99,19 +99,19 @@ def maxnum (item,itemstoshow):
     return x
 
 def showrecentlyaddedmovies():
-    AllMovies=mediaplayer.getrecentlyaddedmovies()
+    AllMovies=mediaplayer.getRecentlyAddedMovies()
     for x in range (0,maxnum(AllMovies,NumOfItems)):
         showmovie(AllMovies[x])
     wait_for_enter()
 
 def showrecentlyaddedseries():
-    AllSeries=mediaplayer.getrecentlyaddedepisodes()
+    AllSeries=mediaplayer.getRecentlyAddedEpisodes()
     for x in range (0,maxnum(AllSeries,NumOfItems)):
         showseries(AllSeries[x])
     wait_for_enter() 
 
 def showrecentlyaddedalbums():
-    AllAlbums=mediaplayer.getrecentlyaddedalbums()
+    AllAlbums=mediaplayer.getRecentlyAddedAlbums()
     for x in range (0,maxnum(AllAlbums,NumOfItems)):
         showalbums(AllAlbums[x])
     wait_for_enter() 
@@ -123,35 +123,35 @@ def showrecentlyairedseries():
     wait_for_enter() 
     
 def doe_wat():
-    mediaplayer.do_action ('192.168.1.102', 'playback/pause')
+    mediaplayer.doAction ('192.168.1.102', 'playback/pause')
     #possible commands under playback: play, pause, stop, rewind, fastForward, stepForward
     #bigStepForward, stepBack, bigStepBack, skipNext, skipPrevious
     wait_for_enter()
     
 def showcurrentlyplaying():
-    allPlaying,playerinfo=mediaplayer.currently_playing()
+    allPlaying,playerinfo=mediaplayer.currentlyPlaying()
     print allPlaying,playerinfo
     wait_for_enter()
     
 def showplayingclients():
-    print mediaplayer.active_players()
+    print mediaplayer.activePlayers()
     wait_for_enter()
     
 def getvolume():
-    for connectedclient in mediaplayer.getclients():
+    for connectedclient in mediaplayer.getClients():
         client=PLEXClient(connectedclient['host'],connectedclient['port'])
         print "Volume is: " + client.getVolume()
         wait_for_enter()
 
 def setvolume():
     volume=raw_input('Enter volume for all clients (0-100):')
-    for connectedclient in mediaplayer.getclients():
+    for connectedclient in mediaplayer.getClients():
         client=PLEXClient(connectedclient['host'],connectedclient['port'])
         client.setVolume(volume)
         wait_for_enter()
     
 def showconnectedclients():
-    for client in mediaplayer.getclients():
+    for client in mediaplayer.getClients():
         print "address: "+ client['address']
         print "unique ID: "+client['uniqueid']
         print "version: " + client['version']
@@ -162,7 +162,7 @@ def showconnectedclients():
 def sendmessagetoallclients():
     MessageTitle=raw_input("Enter a title for the message:")
     MessageText=raw_input("Enter a message:")
-    for connectedclient in mediaplayer.getclients():
+    for connectedclient in mediaplayer.getClients():
         client=PLEXClient(connectedclient['host'],connectedclient['port'])
         client.sendmessage(MessageTitle+","+MessageText)
     wait_for_enter()

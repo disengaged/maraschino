@@ -172,7 +172,7 @@ def get_recently_added_episodes(mediaplayer, episode_offset=0, mobile=False):
         if server_type()=="XBMC": 
             recently_added_episodes = mediaplayer.VideoLibrary.GetRecentlyAddedEpisodes(properties = ['title', 'season', 'episode', 'showtitle', 'playcount', 'thumbnail', 'tvshowid'])['episodes']
         elif server_type()=="PLEX":
-            recently_added_episodes = mediaplayer.getrecentlyaddedepisodes()
+            recently_added_episodes = mediaplayer.getRecentlyAddedEpisodes()
 
         recently_added_db_add(xbmc_label, 'episodes', recently_added_episodes)
 
@@ -228,7 +228,7 @@ def get_recently_added_movies(mediaserver, movie_offset=0, mobile=False):
         if server_type()=="XBMC":
             recently_added_movies = mediaserver.VideoLibrary.GetRecentlyAddedMovies(properties = ['title', 'year', 'rating', 'playcount', 'thumbnail'])['movies']
         elif server_type()=="PLEX":
-            recently_added_movies=mediaserver.getrecentlyaddedmovies()
+            recently_added_movies=mediaserver.getRecentlyAddedMovies()
 
         recently_added_db_add(xbmc_label, 'movies', recently_added_movies)
 
@@ -282,7 +282,7 @@ def get_recently_added_albums(mediaplayer, album_offset=0, mobile=False):
         if server_type()=="XBMC":
             recently_added_albums = mediaplayer.AudioLibrary.GetRecentlyAddedAlbums(properties = ['title', 'year', 'rating', 'artist', 'thumbnail'])['albums']
         elif server_type()=="PLEX":
-            recently_added_albums = mediaplayer.getrecentlyaddedalbums()
+            recently_added_albums = mediaplayer.getRecentlyAddedAlbums()
 
         for album in recently_added_albums:
             if 'artist' in album and isinstance(album['artist'], list): #Frodo

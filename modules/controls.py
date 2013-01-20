@@ -95,7 +95,7 @@ def xhr_play_media(file_type, media_type, media_id):
             item = {'playlistid': id, 'position': position}
             xbmc.Player.Open(item)
         elif server_type()=="PLEX":
-            plexlibrary.playfile (item,plexlibrary.getclients()[0]['host'])
+            plexlibrary.playFile (item,plexlibrary.getClients()[0]['host'])
     except:
         logger.log('CONTROLS :: Failed to open %s playlist' % file_type, 'DEBUG')
         return jsonify({'failed': True})
@@ -624,14 +624,14 @@ def xhr_controls(command):
 
     elif server_type()=="PLEX":
         mediaplayer = PLEXLibrary(server_address())
-        active_players=mediaplayer.active_players()
+        active_players=mediaplayer.activePlayers()
         active_player=active_players[0]
         client=PLEXClient(active_player['host'])
         
         if command == 'play_pause':
             logger.log('CONTROLS :: Play/Pause', 'INFO')
             try:
-                mediaplayer.do_action (active_player['host'], 'playback/pause')
+                mediaplayer.doAction (active_player['host'], 'playback/pause')
                 return_response = 'success'
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
@@ -640,7 +640,7 @@ def xhr_controls(command):
         elif command == 'stop':
             logger.log('CONTROLS :: Stop', 'INFO')
             try:
-                mediaplayer.do_action (active_player['host'], 'playback/stop')
+                mediaplayer.doAction (active_player['host'], 'playback/stop')
                 return_response = 'success'
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
@@ -648,7 +648,7 @@ def xhr_controls(command):
         elif command == 'fast_forward':
             logger.log('CONTROLS :: Fast forward', 'INFO')
             try:
-                mediaplayer.do_action (active_player['host'], 'playback/fastForward')
+                mediaplayer.doAction (active_player['host'], 'playback/fastForward')
                 return_response = 'success'
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
@@ -657,7 +657,7 @@ def xhr_controls(command):
         elif command == 'rewind':
             logger.log('CONTROLS :: Rewind', 'INFO')
             try:
-                mediaplayer.do_action (active_player['host'], 'playback/rewind')
+                mediaplayer.doAction (active_player['host'], 'playback/rewind')
                 return_response = 'success'
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
@@ -666,7 +666,7 @@ def xhr_controls(command):
         elif command == 'next':
             logger.log('CONTROLS :: Next', 'INFO')
             try:
-                mediaplayer.do_action (active_player['host'], 'playback/skipNext')
+                mediaplayer.doAction (active_player['host'], 'playback/skipNext')
                 return_response = 'success'
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
@@ -675,7 +675,7 @@ def xhr_controls(command):
         elif command == 'previous':
             logger.log('CONTROLS :: Previous', 'INFO')
             try:
-                mediaplayer.do_action (active_player['host'], 'playback/skipPrevious')
+                mediaplayer.doAction (active_player['host'], 'playback/skipPrevious')
                 return_response = 'success'
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')

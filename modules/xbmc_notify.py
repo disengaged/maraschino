@@ -72,7 +72,7 @@ def xhr_notify_message():
         try:
             logger.log('NOTIFY XBMC :: Sending message %s' % label, 'INFO')
             server = PLEXLibrary(server_address())
-            for connectedclient in server.getclients():
+            for connectedclient in server.getClients():
                 client = PLEXClient(connectedclient['host'], connectedclient['port'])
                 client.sendmessage(title + "," + message)
                 

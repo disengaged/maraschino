@@ -35,7 +35,7 @@ def xhr_currently_playing():
         elif server_type()=='PLEX':
             plexlibrary=PLEXLibrary(server_address())
             
-            currently_playing,player_info=plexlibrary.currently_playing()
+            currently_playing,player_info=plexlibrary.currentlyPlaying()
             for currently_playingplayer in range (0,len(currently_playing)):
                 current=currently_playing[currently_playingplayer]
                 if current['playstatus'] in ['Playing','Paused']:

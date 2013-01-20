@@ -47,9 +47,12 @@ class PLEXLibrary(object):
         self.MovieLibrary=MovieLibID
         self.MusicLibrary=MusicLibID
     
-    def plexgetxml (self, location):
+    '''
+    Shared functions that don't really have anything to do with Movies, TV Shows or Music
+    '''
+    def getXML (self, location):
         '''
-        plexgetxml returns the root for an XML for Plex
+        getXML returns the root for an XML for Plex
         '''
         try:
             formedurl=self.server+location
@@ -59,21 +62,65 @@ class PLEXLibrary(object):
         except:
             return None
     
-    def getclients(self):
-        root=self.plexgetxml("/clients")
+    def getClients(self):
+        root=self.getXML("/clients")
         Clients=[]
         for node in root:
             Clients.append({'name': node.get('name'),'host':node.get('host'),'address':node.get('address'),'port':node.get('port'),
                     'version':node.get('version'),'uniqueid':node.get('machineIdentifier')})
         return Clients
+
+    def playFile (self,filetoplay,player):
+        key='/library/metadata/'+filetoplay
+        url=self.server+key
+        
+        f={'path': url, 'key': key}
+        url=self.server+"/system/players/"+player+"/application/playMedia?"+urllib.urlencode(f)
+        result=getHTMLbody(url)
+        print url
+        return True
     
+    def currentlyPlaying(self):
+        # read all clients, create array with currently playing
+        currentplay=[]
+        playerinfo=[]
+        for connectedclient in self.getClients():
+            client=PLEXClient(connectedclient['host'],connectedclient['port'])
+            curplay,playinfo=client.currentlyPlaying()
+            curplay['host']=connectedclient['host']
+            currentplay.append(curplay)
+            playinfo['volume']=str2int(client.getVolume())
+            playerinfo.append(playinfo)
+        return currentplay,playerinfo
+    
+    def activePlayers(self):
+        # returns active player
+        activeply=[]
+        current,player=self.currentlyPlaying()
+        for active in current:
+            if active['playstatus'] !='Stopped':
+                active={'host': active['host']}
+                activeply.append(active)
+        return activeply
+    
+    def doAction (self,client, action):
+        formedurl=self.server+"/system/players/"+client+"/"+action
+        try:
+            urllib2.urlopen(formedurl)
+            return True
+        except:
+            return None
+    
+    '''
+    TV Show Functions
+    '''
     def getTVShows (self):
         '''
         getTVShows returns the TV shows from the library
         '''
         TVItems=[]
         url="/library/sections/"+self.TVLibrary+"/all"
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
         
         for node in root:
             watched = '0'
@@ -90,7 +137,7 @@ class PLEXLibrary(object):
         getMovieInfo returns the tv show info from the library
         '''
         url="/library/metadata/"+str(ratingKey)
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
         
         for node in root:
             return {'tvshowid':ratingKey,'label':node.get('title'),'year':node.get('year'),'thumbnail':node.get('thumb'),'genre':-1,'plot':node.get('summary'),
@@ -159,6 +206,23 @@ class PLEXLibrary(object):
        
         return {}
 
+    def getRecentlyAddedEpisodes (self):
+        '''
+        getRecentlyAddedEpisodes returns the recently added TV episodes from the library
+        '''
+        TVItems=[]
+        url="/library/sections/"+self.TVLibrary+"/recentlyAdded"
+        root = self.getXML(url)
+        
+        for node in root:
+            TVItems.append({'title':node.get('title'),'season':node.get('parentIndex'),'episode': node.get('index'),
+                            'showtitle':node.get('grandparentTitle'),'playcount':node.get('viewCount'),
+                            'thumbnail':node.get('thumb'), 'episodeid':node.get('ratingKey')}) 
+        return TVItems
+
+    '''
+    Movie Functions
+    '''
     def getMovies (self):
         '''
         getMovies returns the movies from the library
@@ -198,6 +262,20 @@ class PLEXLibrary(object):
        
         return {}
 
+    def getRecentlyAddedMovies (self):
+        '''
+        getRecentlyAddedMovies returns the recently added movies from the library
+        '''
+        MovieItems=[]
+        root = self.getXML("/library/sections/"+self.MovieLibrary+"/recentlyAdded")
+        for node in root:
+            MovieItems.append({'title':node.get('title'),'year':node.get('year'),'rating':node.get('rating'),
+                              'playcount':node.get('viewCount'),'thumbnail':node.get('thumb'),'movieid':node.get('ratingKey')}) 
+        return MovieItems
+
+    '''
+    Music Functions
+    '''
     def getArtists (self):
         '''
         getArtists returns the artist info from the library
@@ -247,7 +325,7 @@ class PLEXLibrary(object):
         '''
         #Grab top level artist info
         url="/library/metadata/"+str(artistid)
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
 
         artistName = ""
 
@@ -256,7 +334,7 @@ class PLEXLibrary(object):
 
         #Grab top level album info
         url="/library/metadata/"+str(albumid)
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
 
         albumName = ''
         albumYear = ''
@@ -277,84 +355,17 @@ class PLEXLibrary(object):
 
         return Albums
 
-    def getrecentlyaddedepisodes (self):
+    def getRecentlyAddedAlbums (self):
         '''
-        getrecentlyaddedepisodes returns the recently added TV episodes from the library
-        '''
-        TVItems=[]
-        url="/library/sections/"+self.TVLibrary+"/recentlyAdded"
-        root = self.plexgetxml(url)
-        
-        for node in root:
-            TVItems.append({'title':node.get('title'),'season':node.get('parentIndex'),'episode': node.get('index'),
-                            'showtitle':node.get('grandparentTitle'),'playcount':node.get('viewCount'),
-                            'thumbnail':node.get('thumb'), 'episodeid':node.get('ratingKey')}) 
-        return TVItems
-        
-    
-    def getrecentlyaddedmovies (self):
-        '''
-        getrecentlyaddedmovies returns the recently added movies from the library
-        '''
-        MovieItems=[]
-        root = self.plexgetxml("/library/sections/"+self.MovieLibrary+"/recentlyAdded")
-        for node in root:
-            MovieItems.append({'title':node.get('title'),'year':node.get('year'),'rating':node.get('rating'),
-                              'playcount':node.get('viewCount'),'thumbnail':node.get('thumb'),'movieid':node.get('ratingKey')}) 
-        return MovieItems
-    
-    def getrecentlyaddedalbums (self):
-        '''
-        getrecentlyaddedalbums returns the recently added music from the library
+        getRecentlyAddedAlbums returns the recently added music from the library
         '''
         MusicItems=[]
-        root = self.plexgetxml("/library/sections/"+self.MusicLibrary+"/recentlyAdded")
+        root = self.getXML("/library/sections/"+self.MusicLibrary+"/recentlyAdded")
         for node in root:
             MusicItems.append({'title':node.get('title'),'year':node.get('year'),'rating':node.get('rating'),
                                'artist':node.get('artist'),'thumbnail':node.get('thumb'),
                                'albumid':node.get('ratingKey')})
         return MusicItems
-    
-    def playfile (self,filetoplay,player):
-        key='/library/metadata/'+filetoplay
-        url=self.server+key
-        
-        f={'path': url, 'key': key}
-        url=self.server+"/system/players/"+player+"/application/playMedia?"+urllib.urlencode(f)
-        result=getHTMLbody(url)
-        print url
-        return True
-    
-    def currently_playing(self):
-        # read all clients, create array with currently playing
-        currentplay=[]
-        playerinfo=[]
-        for connectedclient in self.getclients():
-            client=PLEXClient(connectedclient['host'],connectedclient['port'])
-            curplay,playinfo=client.currently_playing()
-            curplay['host']=connectedclient['host']
-            currentplay.append(curplay)
-            playinfo['volume']=str2int(client.getVolume())
-            playerinfo.append(playinfo)
-        return currentplay,playerinfo
-    
-    def active_players(self):
-        # returns active player
-        activeply=[]
-        current,player=self.currently_playing()
-        for active in current:
-            if active['playstatus'] !='Stopped':
-                active={'host': active['host']}
-                activeply.append(active)
-        return activeply
-    
-    def do_action (self,client, action):
-        formedurl=self.server+"/system/players/"+client+"/"+action
-        try:
-            urllib2.urlopen(formedurl)
-            return True
-        except:
-            return None
         
 class PLEXClient(object):
     '''
