@@ -4,7 +4,7 @@ import maraschino
 from maraschino import app, logger
 from maraschino.noneditable import *
 from maraschino.tools import *
-from plex.plexclient import PLEXLibrary,PLEXClient
+from plex.plexclient import PLEXLibrary, PLEXClient
 
 @app.route('/xhr/currently_playing')
 @requires_auth
