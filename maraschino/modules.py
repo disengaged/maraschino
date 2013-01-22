@@ -1118,7 +1118,7 @@ def server_settings_dialog(server_id=None):
                 active_server = Setting('active_server', server.id)
                 db_session.add(active_server)
                 db_session.commit()
-            logger.log(active_server, 'INFO')
+
             return render_template('includes/servers.html',
                 servers = MediaServer.query.order_by(MediaServer.position),
             )
@@ -1137,7 +1137,7 @@ def delete_server(server_id=None):
     """
 
     try:
-        mediaServer = MediaServer.query.get(MediaServer.id == server_id)
+        mediaServer = MediaServer.query.get(server_id)
         db_session.delete(mediaServer)
         db_session.commit()
 
@@ -1179,7 +1179,7 @@ def switch_server(server_id=None):
     Switches XBMC servers.
     """
 
-    mediaServer = MediaServer.query.get(MediaServer.id == server_id)
+    mediaServer = MediaServer.query.get(server_id)
 
     try:
         active_server = get_setting('active_server')

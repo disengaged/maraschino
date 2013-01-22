@@ -151,7 +151,7 @@ class PLEXLibrary(object):
         '''
         #Grab top level show info
         url="/library/metadata/"+str(tvshowid)
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
 
         showtitle = ""
 
@@ -160,7 +160,7 @@ class PLEXLibrary(object):
 
         TVItems=[]
         url="/library/metadata/"+str(tvshowid)+"/children"
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
         
         for node in root:
             watched = '0'
@@ -177,7 +177,7 @@ class PLEXLibrary(object):
         '''
         #Grab top level show info
         url="/library/metadata/"+str(tvshowid)
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
 
         showtitle = ""
 
@@ -186,7 +186,7 @@ class PLEXLibrary(object):
 
         TVItems=[]
         url="/library/metadata/"+str(season)+"/children"
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
         
         for node in root:
             TVItems.append({'tvshowid':tvshowid,'season':season,'episodeid':node.get('ratingKey'),'label':node.get('title'),'showtitle':showtitle,'thumbnail':node.get('thumb'),'episode':node.get('leafCount'),
@@ -198,7 +198,7 @@ class PLEXLibrary(object):
         getTVEpisodeInfo returns the tv episode info from the library
         '''
         url="/library/metadata/"+str(episodeid)
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
         
         for node in root:
             return {'episodeid':episodeid,'label':node.get('title'),'thumbnail':node.get('thumb'),'plot':node.get('summary'),
@@ -229,7 +229,7 @@ class PLEXLibrary(object):
         '''
         Movies=[]
         url="/library/sections/"+self.MovieLibrary+"/all"
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
         
         for node in root:
             Movies.append({'movieid':node.get('ratingKey'),'label':node.get('title'),'year':node.get('year'),'thumbnail':node.get('thumb')})
@@ -240,7 +240,7 @@ class PLEXLibrary(object):
         getMovieInfo returns the movie info from the library
         '''
         url="/library/metadata/"+str(ratingKey)
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
         
         for node in root:
             genre = ''
@@ -282,7 +282,7 @@ class PLEXLibrary(object):
         '''
         Artists=[]
         url="/library/sections/" + self.MusicLibrary + "/all"
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
 
         for node in root:
             genre = ''
@@ -303,7 +303,7 @@ class PLEXLibrary(object):
         '''
         #Grab top level artist info
         url="/library/metadata/"+str(artistid)
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
 
         artistName = ""
 
@@ -312,7 +312,7 @@ class PLEXLibrary(object):
 
         Albums=[]
         url="/library/metadata/" + str(artistid) + "/children"
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
 
         for node in root:
             Albums.append({'artistid':artistid,'artist':artistName,'albumid':node.get('ratingKey'),'label':node.get('title'),'thumbnail':node.get('thumb'),'year':node.get('year')})
@@ -345,7 +345,7 @@ class PLEXLibrary(object):
 
         Albums=[]
         url="/library/metadata/" + str(albumid) + "/children"
-        root = self.plexgetxml(url)
+        root = self.getXML(url)
 
         for node in root:
             index = 0
