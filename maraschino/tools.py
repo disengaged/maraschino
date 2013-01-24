@@ -177,16 +177,19 @@ FILTERS['convert_bytes'] = convert_bytes
 
 def xbmc_image(url, label='default'):
     """Build xbmc image url"""
-    if url.startswith('special://'): #eden
-        return '%s/xhr/xbmc_image/%s/eden/?path=%s' % (maraschino.WEBROOT, label, url[len('special://'):])
+    if url != None: # Make sure we didn't just get handed a empty object
+        if url.startswith('special://'): #eden
+            return '%s/xhr/xbmc_image/%s/eden/?path=%s' % (maraschino.WEBROOT, label, url[len('special://'):])
 
-    elif url.startswith('image://'): #frodo
-        url = url[len('image://'):]
-        url = urllib.quote(url.encode('utf-8'), '')
+        elif url.startswith('image://'): #frodo
+            url = url[len('image://'):]
+            url = urllib.quote(url.encode('utf-8'), '')
 
-        return '%s/xhr/xbmc_image/%s/frodo/?path=%s' % (maraschino.WEBROOT, label, url)
-    elif url.startswith('/library/'): #plex
-        return '%s/xhr/xbmc_image/%s/plex/?path=%s' % (maraschino.WEBROOT, label, url)
+            return '%s/xhr/xbmc_image/%s/frodo/?path=%s' % (maraschino.WEBROOT, label, url)
+        elif url.startswith('/library/'): #plex
+            return '%s/xhr/xbmc_image/%s/plex/?path=%s' % (maraschino.WEBROOT, label, url)
+        else:
+            return url
     else:
         return url
 
