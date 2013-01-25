@@ -3,7 +3,7 @@ Created on Jun 23, 2012
 
 @author: Anne Jan Elsinga
 '''
-__version__="0.1.1"
+__version__="0.1.2"
 import urllib
 import urllib2
 import time
