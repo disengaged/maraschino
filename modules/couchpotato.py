@@ -88,6 +88,7 @@ def couchpotato_proxy(url):
     username = get_setting_value('couchpotato_user')
     password = get_setting_value('couchpotato_password')
 
+    url = url.split('/')[-1]
     url = '%s/file.cache/%s' % (couchpotato_url(), url)
     req = urllib2.Request(url)
 
@@ -107,8 +108,8 @@ def xhr_couchpotato(status=False):
         status_string = 'status=%s' % status
         template = 'couchpotato/all.html'
     else:
-        status = 'wanted'
-        status_string = False
+        status = 'active'
+        status_string = 'status=%s' % status
         template = 'couchpotato.html'
     try:
         logger.log('CouchPotato :: Fetching "%s movies" list' % status, 'INFO')
