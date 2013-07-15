@@ -387,7 +387,6 @@ def xhr_change_channel(channelid):
 @app.route('/xhr/controls/<command>')
 @requires_auth
 def xhr_controls(command):
-<<<<<<< HEAD
     if server_type()=="XBMC":
         serversettings = server_settings()
         xbmc = jsonrpclib.Server(server_api_address())
