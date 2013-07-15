@@ -88,6 +88,7 @@ def couchpotato_proxy(url):
     username = get_setting_value('couchpotato_user')
     password = get_setting_value('couchpotato_password')
 
+    url = url.split('/')[-1]
     url = '%s/file.cache/%s' % (couchpotato_url(), url)
     req = urllib2.Request(url)
 
