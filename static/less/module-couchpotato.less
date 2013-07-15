@@ -116,11 +116,13 @@
       color: #ccc;
       vertical-align: middle;
       height: 60px;
-      width: 95%;
+      min-width: 90%;
+      max-width: 95%;
       padding: 6px;
       overflow: hidden;
       position: relative;
       .border-radius(4px);
+      z-index: 10;
 
       &:hover {
         background: url('/@{webroot}/images/alpha/fff_20.png');
@@ -142,19 +144,22 @@
       div.image {
         float: left;
         height: 100%;
-        padding-right: 5px;
+        width: 14%;
         position: relative;
         cursor: pointer;
+        margin-right: 5px;
+        z-index: 1;
 
         img.poster {
           height: 100%;
+          width: 100%;
         }
 
         span.profile {
           position: absolute;
           bottom: 0;
           margin: auto;
-          width: 90%;
+          width: 100%;
           text-align: center;
           background: rgb(0, 0, 0); /* fallback color */
           background: rgba(0, 0, 0, 0.8);
@@ -166,6 +171,15 @@
         padding-bottom: 5px;
         &.title{
           font-size: 1.2em;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          width: 80%;
+          overflow-x: hidden;
+        }
+        &.tagline {
+          height: 30px;
+          overflow-y: auto;
+          font-size: 8px;
         }
       }
     }
@@ -362,8 +376,8 @@
             height: 40px;
             overflow: auto;
             text-align: justify;
-            padding: 6px;
-            margin: 10px;
+            padding: 3px;
+            margin: 10px 0px;
           }
 
           div.choices{
@@ -392,31 +406,36 @@
     margin: 5px;
     width: 100%;
     overflow: hidden;
-    table {
-      width: 70%;
-    }
-    .thumbs{
-      width: 108px;
-      height:38px;
-      overflow: scroll;
-      white-space: nowrap;
-    }
 
-    .options{
-      margin: 5px;
-      float: right;
+    .left_content{
+      float: left;
+      width: 30%;
+
       img {
-        width: 15px;
-        height: 15px;
-        padding: 5px;
-        cursor: pointer;
-        .border-radius(4px);
-        background: url('/@{webroot}/images/alpha/fff_10.png');
+        width: 100%;
+      }
+      .options{
+        margin: 0 auto;
+        width: 100%;
+        text-align: center;
+        img {
+          width: 15px;
+          height: 15px;
+          padding: 5px;
+          cursor: pointer;
+          .border-radius(4px);
+          background: url('/@{webroot}/images/alpha/fff_10.png');
 
-        &:hover{
-          background: url('/@{webroot}/images/alpha/fff_20.png');
+          &:hover{
+            background: url('/@{webroot}/images/alpha/fff_20.png');
+          }
         }
       }
+    }
+
+    .right_content{
+      float: right;
+      width: 70%;
     }
   }
 

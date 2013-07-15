@@ -387,9 +387,11 @@ def xhr_change_channel(channelid):
 @app.route('/xhr/controls/<command>')
 @requires_auth
 def xhr_controls(command):
+<<<<<<< HEAD
     if server_type()=="XBMC":
         serversettings = server_settings()
         xbmc = jsonrpclib.Server(server_api_address())
+        return_response = 'failed'
 
         try:
             active_player = xbmc.Player.GetActivePlayers()
@@ -432,7 +434,26 @@ def xhr_controls(command):
         elif command == 'next':
             logger.log('CONTROLS :: Next', 'INFO')
             try:
-                xbmc.Player.GoNext(playerid=playerid)
+                version = xbmc.Application.GetProperties(properties=['version'])['version']['major']
+                if version < 12:
+                    xbmc.Player.GoNext(playerid=playerid)
+                else:
+                    xbmc.Player.GoTo(playerid=playerid, to='next')
+
+                return_response = 'success'
+            except:
+                logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
+                return_response = 'failed'
+
+        elif command == 'previous':
+            logger.log('CONTROLS :: Previous', 'INFO')
+            try:
+                version = xbmc.Application.GetProperties(properties=['version'])['version']['major']
+                if version < 12:
+                    xbmc.Player.GoPrevious(playerid=playerid)
+                else:
+                    xbmc.Player.GoTo(playerid=playerid, to='previous')
+
                 return_response = 'success'
             except:
                 logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
