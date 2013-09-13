@@ -274,8 +274,7 @@
     }
   }
 
-  #sickbeard-list
-  {
+  #sickbeard-list {
     ul {
       overflow: auto;
       width: 100%;
@@ -288,16 +287,13 @@
       line-height: 1.5em;
       margin-top: 5px;
       padding: 5px 5px;
+      position: relative;
 
       .border-radius(4px);
 
       &:hover {
         background: url('/@{webroot}/images/alpha/fff_20.png');
       }
-    }
-
-    li {
-      position: relative;
 
       &:first-child {
         margin-top: 0;
@@ -319,13 +315,9 @@
       .show-name{
         display: block;
         padding-left: 121px;
-        padding-right: 100px;
-      }
-
-    .hd-image {
-        right: 10px;
-        position: absolute;
-        top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   }
@@ -415,6 +407,9 @@
         bottom: 0;
         cursor: pointer;
         .border-radius(4px);
+        border-top:1px dashed red;
+        border-right:1px dashed red;
+        border-left:1px dashed red;
 
         &:hover{
           background: url('/@{webroot}/images/alpha/fff_40.png');
@@ -428,14 +423,17 @@
       width: 100%;
       position: relative;
       margin-top: -35px;
+      text-align: center;
 
       div {
         background: url('/@{webroot}/images/alpha/fff_20.png');
         padding: 4px;
-        width: 30%;
+        width: 28%;
         height: 15px;
-        margin: 2px;
+        margin: 1%;
         float: left;
+        overflow: hidden;
+        line-height: 18px;
         .border-radius(4px);
         &:hover {
           background: url('/@{webroot}/images/alpha/fff_40.png');
@@ -474,7 +472,8 @@
 
   table#season {
     table-layout: fixed;
-    width: 100%;
+    width: 99%;
+    font-size: 0.8em;
   }
 
   div.history {
@@ -632,21 +631,23 @@
 
   #sb_search {
     width: 100%;
-
+    select {
+      margin: 5px 2%;
+      width: 28%;
+    }
     form {
       text-align: center;
 
       input[type=search] {
         border: none;
         padding: 2px 5px;
-        width: 250px;
+        width: 240px;
         .border-radius(2px);
       }
     }
 
     div#result{
       max-height: 200px;
-      margin: 10px 15px 0;
       overflow: auto;
       position: relative;
       ul{

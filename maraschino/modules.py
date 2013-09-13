@@ -535,6 +535,46 @@ AVAILABLE_MODULES = [
         ]
     },
     {
+        'name':'ipcamera',
+        'label':'Ip Camera',
+        'description':'Show and control your ip camera',
+        'static': False,
+        'poll': 0,
+        'delay': 0,
+        'settings': [
+                {
+                'key': 'ipcamera_ip',
+                'value': '',
+                'description': 'Ip',
+                },
+                {
+                'key': 'ipcamera_port',
+                'value': '',
+                'description': 'Port',
+                },
+                {
+                'key': 'ipcamera_username',
+                'value': '',
+                'description': 'Username',
+                },
+                {
+                'key': 'ipcamera_password',
+                'value': '',
+                'description': 'Password',
+                },
+                {
+                'key': 'ipcamera_type',
+                'value': 'fosscammjeg',
+                'description': 'Pick your camera',
+                'type': 'select',
+                'options': [
+                    {'value':'foscammjeg', 'label':'Foscam MJEG'},
+                    {'value':'foscammp4', 'label':'Foscam MP4'},
+                ]
+            },
+        ]
+    },
+    {
         'name': 'transmission',
         'label': 'Transmission',
         'description': 'Shows you information about your Transmission downloads.',
@@ -723,6 +763,11 @@ MISC_SETTINGS = [
         'value': '0',
         'description': 'Use a random background when not watching media',
         'type': 'bool',
+    },
+    {
+        'key': 'remote_inactivity_enable',
+        'value': '60',
+        'description': 'Disable remote control after x seconds of inactivity (0 to disable)',
     },
     {
         'key': 'num_columns',
