@@ -575,7 +575,7 @@ def xhr_xbmc_library_media(media_type=None):
 
             else:
                 library = xbmc_get_episodes(mediaserver, int(tvshowid), int(season))
-                title = '%s - Season %s' % (library[0]['showtitle'], library[0]['season'])
+                title = '%s - Season %s' % (library[0]['showtitle'], season)
                 back_path = '/seasons?tvshowid=%s' % tvshowid
 
 

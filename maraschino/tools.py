@@ -11,6 +11,7 @@ from maraschino.models import Setting, MediaServer
 from flask import send_file
 import StringIO
 import urllib
+import urllib2
 import re
 
 def check_auth(username, password):
@@ -86,12 +87,17 @@ def round_number(num):
 
 FILTERS['round_number'] = round_number
 
-def format_number(num):
-    extension_list = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB']
+def format_number(num, binary=True):
+    if binary:
+        extension_list = ['bytes', 'kiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB']
+        number_base = 1024
+    else:
+        extension_list = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB']
+        number_base = 1000
 
     for i in range(len(extension_list)):
-        base = 1024**i
-        if num/base < 1024:
+        base = number_base**i
+        if num/base < number_base:
             return '%.2f' % (float(num)/base) + ' ' + extension_list[i]
 
     return str(num) + ' bytes'
@@ -249,7 +255,10 @@ def download_image(image, file_path):
 
     try:
         logger.log('Downloading %s' % image, 'INFO')
-        image_on_web = urllib.urlopen(image)
+
+        headers = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.65 Safari/537.36' }
+        request = urllib2.Request(image, None, headers)
+        image_on_web = urllib2.urlopen(request, None)
         while True:
             buf = image_on_web.read(65536)
             if len(buf) == 0:
