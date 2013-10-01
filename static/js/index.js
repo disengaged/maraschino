@@ -1345,7 +1345,7 @@ $(document).ready(function() {
     $(this).children().css('background', 'url('+WEBROOT+'/static/images/xhrloading.gif) no-repeat center').html('&nbsp;');
   });
 
-  // menu wanted click
+  // menu 'wanted' click
   $(document).on('click', '#couchpotato .menu .wanted', function(){
     $.get(WEBROOT + '/xhr/couchpotato/')
     .success(function(data){
@@ -1353,7 +1353,7 @@ $(document).ready(function() {
     });
   });
 
-  // menu '+'' click
+  // menu 'all' click
   $(document).on('click', '#couchpotato .menu .all', function(){
     $.get(WEBROOT + '/xhr/couchpotato/done/')
     .success(function(data){
@@ -1361,7 +1361,7 @@ $(document).ready(function() {
     });
   });
 
-  // menu history click
+  // menu 'history' click
   $(document).on('click', '#couchpotato .menu .history', function(){
     $.get(WEBROOT + '/xhr/couchpotato/history/')
     .success(function(data){
@@ -1416,7 +1416,25 @@ $(document).ready(function() {
         x_move = x_move + 'px';
         ul_width = ul_width + 'px';
         $('#couchpotato .release_list').css('width', ul_width);
-
+        var option = '#couchpotato #cp_content .options&.'+id;
+        if($(option + ' .release_list').text() === ''){
+          $.get(WEBROOT + '/xhr/couchpotato/release/for_movie/'+$(option).data('cpid'), function(data) {
+            if(data.success){
+              $(data.releases).each(function(index, el) {
+                if(el.info.name){
+                  $(option + ' .release_list ul').append(
+                    '<li data-id="'+ el.id +'" data-imdbid="'+id+'" title="Provider: '+el.info.provider+'&#13;Size: '+el.info.size+'MB">'+
+                    '<a href="'+el.info.detail_url+'" target="_blank">'+el.info.name+'</a>'+
+                    '<img id="download" class="release_btn" src="'+ WEBROOT + '/static/images/download.png" data-action="download" />'+
+                    '<img id="delete" class="release_btn" src="'+ WEBROOT + '/static/images/no.png" data-action="delete" /></li>'
+                  );
+                }
+              });
+            } else {
+              popup_message('Failed to get releases for movie id: '+id);
+            }
+          });
+        }
         el.transition({x: x_move, opacity: 0.7}, function(){
           $('#couchpotato #cp_content .options&.'+id).transition({opacity: 1});
         });
@@ -1464,11 +1482,16 @@ $(document).ready(function() {
     el.attr('src', WEBROOT + '/static/images/xhrloading.gif');
     $.get(WEBROOT+'/xhr/couchpotato/delete_movie/'+id, function(data) {
       if(data.success){
-        if(el.parent().parent().attr('id') === 'info'){
+        if(el.parent().parent().parent().attr('id') === 'info'){
           el.attr('src', WEBROOT + '/static/images/yes.png');
+          $.get(WEBROOT + '/xhr/couchpotato/done/')
+          .success(function(data){
+            $('#couchpotato').replaceWith(data);
+          });
         } else {
           $('#couchpotato #cp_content #'+imdbid).transition({opacity: 0, duration: 1000}, function(){
             $(this).remove();
+            $('#couchpotato #cp_content .options.'+imdbid).remove();
           });
         }
       } else {

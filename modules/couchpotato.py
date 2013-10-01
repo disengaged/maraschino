@@ -104,6 +104,7 @@ def couchpotato_proxy(url):
 @app.route('/xhr/couchpotato/')
 @app.route('/xhr/couchpotato/<status>/')
 def xhr_couchpotato(status='active'):
+    profiles = {}
     status_string = 'status=%s' % status
     template = 'couchpotato.html'
 
@@ -126,9 +127,17 @@ def xhr_couchpotato(status='active'):
         logger.log('CouchPotato :: Wanted movies list is empty', 'INFO')
         return cp_search('There are no movies in your wanted list.')
 
+    profiles = couchpotato_api('profile.list')
+
+    for movie in couchpotato['movies']:
+        for profile in profiles['list']:
+            if profile['id'] == movie['profile_id']:
+                movie['profile_label'] = profile['label']
+
     return render_template(template,
         url=couchpotato_url(),
         couchpotato=couchpotato,
+        profiles=profiles,
         compact_view=get_setting_value('couchpotato_compact') == '1',
     )
 
