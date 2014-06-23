@@ -1,5 +1,6 @@
 from flask import render_template, jsonify, request, json
 from maraschino.noneditable import *
+#from maraschino.noneditable import server_api_address, safe_server_address
 from maraschino.models import Setting
 from maraschino.database import db_session
 from maraschino.tools import requires_auth, get_setting, get_setting_value, natural_sort, format_seconds
@@ -479,7 +480,7 @@ def xhr_xbmc_library_media(media_type=None):
     path = None
     back_path = '/'
     library = None
-    
+
     if not server_api_address():
         logger.log('LIBRARY :: No Media server defined', 'ERROR')
         return render_xbmc_library(message="You need to configure Media server settings first.")
@@ -710,7 +711,6 @@ def xhr_xbmc_library_media(media_type=None):
         logger.log('LIBRARY :: Problem fetching %s' % media_type, 'ERROR')
         logger.log('EXCEPTION :: %s' % e, 'DEBUG')
         return render_xbmc_library(message='There was a problem connecting to the XBMC server')
-
     return render_xbmc_library(
         template=template,
         library=library,
@@ -1055,10 +1055,12 @@ def xbmc_get_file_path(xbmc, file_type, path):
 
     if not files:
         files = [{'label': 'Directory is empty', 'file': path}]
+    else:
+        files = [x for x in files if x['filetype'] == 'directory'] + [x for x in files if x['filetype'] != 'directory']
+        sorted(files)
     for f in files:
         if f['file'].endswith('/') or f['file'].endswith('\\'):
             f['file'] = f['file'][:-1]
-
     return files
 
 
@@ -1179,6 +1181,7 @@ def render_xbmc_library(template='library.html',
         library=library,
         title=title,
         message=message,
+        library_app_link="http://xbmc.org/" if safe_server_address() is None else safe_server_address(),
         settings=settings,
         view=view,
         media=media,

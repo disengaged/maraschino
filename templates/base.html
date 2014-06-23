@@ -21,7 +21,10 @@
     <style>
       .module h2:first-of-type,
       .dialog h2:first-of-type,
-      .placeholder h2:first-of-type {
+      .placeholder h2:first-of-type,
+      .module h2:first-of-type a,
+      .dialog h2:first-of-type a,
+      .placeholder h2:first-of-type a {
         color: #{{ title_color }}
       }
     </style>
@@ -67,6 +70,7 @@
           </li>
           {% include 'includes/manage.html' %}
           {% include 'includes/servers.html' %}
+          <a href="{{ webroot_url('/xbmcmm') }}" style="color:#eee;"><li>Library editor</li></a>
         </ul>
       </div>
     {% endif %}
@@ -88,8 +92,6 @@
     <script src="{{ url_for('static', filename='js/lib/jquery.tablesorter.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lib/jquery.tablesorter.pager.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lib/jquery.ui.rcarousel.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/lib/jquery.ui.widget.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/lib/jquery.ui.core.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lib/jquery.transit.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lib/jquery.dataset.js') }}"></script>
     <script src="{{ url_for('static', filename='js/lib/jquery.scrollTo.min.js') }}"></script>

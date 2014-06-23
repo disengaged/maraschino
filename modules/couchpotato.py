@@ -131,11 +131,12 @@ def xhr_couchpotato(status='active'):
 
     for movie in couchpotato['movies']:
         for profile in profiles['list']:
-            if profile['id'] == movie['profile_id']:
+            if profile['_id'] == movie['profile_id']:
                 movie['profile_label'] = profile['label']
 
     return render_template(template,
         url=couchpotato_url(),
+        app_link=couchpotato_url_no_api(),
         couchpotato=couchpotato,
         profiles=profiles,
         compact_view=get_setting_value('couchpotato_compact') == '1',
@@ -154,7 +155,7 @@ def xhr_couchpotato_history():
 
     except Exception as e:
         logger.log('CouchPotato :: Could not retrieve Couchpotato - %s' % (e), 'WARNING')
-        couchpotato = None
+        couchpotato = "empty"
 
     return render_template('couchpotato/history.html',
         couchpotato=couchpotato,
@@ -379,7 +380,7 @@ def cp_get_movie(id):
     """
     try:
         logger.log('CouchPotato :: Retrieving movie info', 'INFO')
-        result = couchpotato_api('movie.get', 'id=%s' % id)
+        result = couchpotato_api('media.get', 'id=%s' % id)
         try:
             logger.log('CouchPotato :: Getting quality profiles', 'INFO')
             profiles = couchpotato_api('profile.list')

@@ -12,6 +12,7 @@ from maraschino import logger
 
 xbmc_error = 'There was a problem connecting to the XBMC server'
 
+
 @app.route('/xhr/play/<file_type>/<media_type>/<int:media_id>')
 @requires_auth
 def xhr_play_media(file_type, media_type, media_id):
@@ -102,6 +103,7 @@ def xhr_play_media(file_type, media_type, media_id):
 
     return jsonify({'success': True})
 
+
 @app.route('/xhr/enqueue/<file_type>/<media_type>/<int:media_id>')
 @requires_auth
 def xhr_enqueue_media(file_type, media_type, media_id):
@@ -155,6 +157,7 @@ def xhr_enqueue_media(file_type, media_type, media_id):
 
     return jsonify({ 'success': True })
 
+
 @app.route('/xhr/resume/video/<video_type>/<int:video_id>')
 @requires_auth
 def xhr_resume_video(video_type, video_id):
@@ -203,6 +206,7 @@ def xhr_resume_video(video_type, video_id):
 
     return jsonify({ 'success': True })
 
+
 @app.route('/xhr/play/trailer/<int:movieid>')
 @app.route('/xhr/play/trailer/url/<path:trailer>')
 @requires_auth
@@ -236,6 +240,7 @@ def xhr_play_trailer(movieid=None, trailer=None):
         return jsonify({ 'failed': True })
 
     return jsonify({ 'success': True })
+
 
 @app.route('/xhr/play_file/<file_type>/', methods=['POST'])
 @requires_auth
@@ -278,6 +283,7 @@ def xhr_play_file(file_type):
 
     return jsonify({ 'success': True })
 
+
 @app.route('/xhr/enqueue_file/<file_type>/', methods=['POST'])
 @requires_auth
 def xhr_enqueue_file(file_type):
@@ -301,6 +307,7 @@ def xhr_enqueue_file(file_type):
 
     return jsonify({ 'success': True })
 
+
 @app.route('/xhr/playlist/<int:playerid>/play/<int:position>')
 @requires_auth
 def xhr_playlist_play(playerid, position):
@@ -314,6 +321,7 @@ def xhr_playlist_play(playerid, position):
     except:
         logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
         return jsonify({'failed': True})
+
 
 @app.route('/xhr/playlist/<int:playlistid>/clear')
 @requires_auth
@@ -332,6 +340,7 @@ def xhr_clear_playlist(playlistid):
     elif server_type()=="PLEX":
         # no support for playlist yet
         return jsonify({'success': True})
+
 
 @app.route('/xhr/playlist/<int:playlistid>/move_item/<int:position1>/<direction>')
 @requires_auth
@@ -356,6 +365,7 @@ def xhr_move_playlist_item(playlistid, position1, direction):
         logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
         return jsonify({'failed': True})
 
+
 @app.route('/xhr/playlist/<int:playlistid>/remove_item/<int:position>')
 @requires_auth
 def xhr_remove_playlist_item(playlistid, position):
@@ -370,6 +380,7 @@ def xhr_remove_playlist_item(playlistid, position):
         logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
         return jsonify({'failed': True})
 
+
 @app.route('/xhr/controls/change_channel/<int:channelid>')
 @requires_auth
 def xhr_change_channel(channelid):
@@ -383,6 +394,34 @@ def xhr_change_channel(channelid):
     except:
         logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
         return jsonify({'failed': True})
+
+
+@app.route('/xhr/export/<library>/<method>/', methods=['POST'])
+@requires_auth
+def xhr_export_library(library, method):
+    logger.log('CONTROLS :: Exporting %s library' % library, 'INFO')
+    xbmc = jsonrpclib.Server(server_api_address())
+    params = {'options':{}}
+
+    if method == 'separate':
+        for item in request.form:
+            params['options'][item] = True
+    else:
+        path = request.form['path']
+        path = urllib.unquote(path.encode('ascii')).decode('utf-8')
+        params['options']['path'] = path
+
+    try:
+        if library == 'video':
+            xbmc.VideoLibrary.Export(**params)
+        else:
+            xbmc.AudioLibrary.Export(**params)
+        return jsonify({'success': True})
+
+    except:
+        logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
+        return jsonify({'failed': True})
+
 
 @app.route('/xhr/controls/<command>')
 @requires_auth
@@ -729,3 +768,45 @@ def xhr_controls(command):
         return jsonify({ 'success': True })
     else:
         return jsonify({ 'failed': True })
+
+@app.route('/xhr/download/<file_type>/<media_type>/<int:media_id>')
+@requires_auth
+def xhr_download_media(file_type, media_type, media_id):
+    logger.log('CONTROLS :: Downloading %s' % media_type, 'INFO')
+    xbmc = jsonrpclib.Server(server_api_address())
+    serversettings = server_settings()
+
+    try:
+        if media_type == 'episode':
+            video = xbmc.VideoLibrary.GetEpisodeDetails(episodeid=media_id, properties=['file'])['episodedetails']['file']
+        elif media_type == 'movie':
+            video = xbmc.VideoLibrary.GetMovieDetails(movieid=media_id, properties=['file'])['moviedetails']['file']
+    except:
+        logger.log('CONTROLS :: Failed to retrieve path to %s' % media_type, 'DEBUG')
+        return jsonify({ 'failed': True })
+
+    path = xbmc.Files.PrepareDownload(path=video)['details']['path']
+
+    url = 'http://'+serversettings['username']+':'+serversettings['password']+'@'+serversettings['hostname']+':'+serversettings['port']+'/'+path
+
+    return url
+
+
+@app.route('/xhr/library_remove/<media>/<int:id>')
+@requires_auth
+def xhr_library_remove(media, id):
+    logger.log('CONTROLS :: Removing %s from XBMC library' % media, 'INFO')
+    xbmc = jsonrpclib.Server(server_api_address())
+
+    try:
+        if media == 'movie':
+            xbmc.VideoLibrary.RemoveMovie(movieid=id)
+        elif media == 'tvshow':
+            xbmc.VideoLibrary.RemoveTVShow(tvshowid=id)
+        elif media == 'episode':
+            xbmc.VideoLibrary.RemoveEpisode(episodeid=id)
+        return jsonify({'success': True})
+
+    except:
+        logger.log('CONTROLS :: %s' % xbmc_error, 'ERROR')
+        return jsonify({'failed': True})

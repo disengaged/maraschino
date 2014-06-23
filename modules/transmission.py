@@ -1,6 +1,6 @@
 # Author: Geoffrey Huntley <ghuntley@ghuntley.com>
 
-from flask import Flask, jsonify, render_template
+from flask import render_template
 import transmissionrpc
 
 from datetime import timedelta
@@ -11,7 +11,7 @@ from maraschino import app, logger
 def log_exception(e):
     logger.log('Transmission :: EXCEPTION -- %s' % e, 'DEBUG')
 
-@app.route('/xhr/transmission')
+
 @app.route('/xhr/transmission/')
 @requires_auth
 def xhr_transmission():
@@ -25,14 +25,21 @@ def xhr_transmission():
     eta = timedelta()
 
     # transmissionrpc connection params
+    address = get_setting_value('transmission_ip')
+    port = get_setting_value('transmission_port')
+    webroot = get_setting_value('transmission_webroot')
+    if not webroot:
+        webroot = 'transmission'
+
     params = {
-        'address' : get_setting_value('transmission_ip'),
-        'port' : get_setting_value('transmission_port'),
+        'address' : address,
+        'port' : '%s/%s/rpc' % (port, webroot),
         'user' : get_setting_value('transmission_user') or None,
         'password' : get_setting_value('transmission_password') or None
     }
     
     connection = False
+    app_link = 'http://%s:%s/%s/web/' % (address, port, webroot),
 
     try:
         client = transmissionrpc.Client(**params)
@@ -62,10 +69,12 @@ def xhr_transmission():
 
     except Exception as e:
         log_exception(e)
+        return render_template('transmission.html', app_link = app_link[0])
 
     return render_template('transmission.html',
         connection = connection,
         show_empty = get_setting_value('transmission_show_empty') == '1',
+        app_link = app_link[0],
         transmission = transmission,
         seeding = seeding,
         upload = "%.1f" % (stats.uploadSpeed / 1024.0),
